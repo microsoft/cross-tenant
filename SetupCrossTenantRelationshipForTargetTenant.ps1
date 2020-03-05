@@ -290,15 +290,14 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 
     $kv = $null
     try {
-        $kv = Get-AzureRmKeyVault -Name $kvName -ResourceGroupName $resourceGrpName
-        if ($kv) {
-            Write-Verbose "Keyvault $kvName already exists."
-        }        
+        $kv = Get-AzureRmKeyVault -Name $kvName -ResourceGroupName $resourceGrpName        
     } catch {
         Write-Verbose "KeyVault $kvName not found, this will be created."
     }
-
-    if (-not $kv) {
+    
+    if ($kv) {
+        Write-Verbose "Keyvault $kvName already exists."
+    } else {
         Write-Verbose "Creating KeyVault $kvName"
         $kv = New-AzureRmKeyVault -Name $kvName -Location $kvLocation -ResourceGroupName $resourceGrpName
         Write-Host "KeyVault $kvName successfully created" -Foreground Green

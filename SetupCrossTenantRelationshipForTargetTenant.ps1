@@ -430,7 +430,7 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
     
     $base64CertHash = [System.Convert]::ToBase64String($certificate.GetCertHash())
     $base64CertVal = [System.Convert]::ToBase64String($certificate.GetRawCertData())
-    $appCertPwd = New-AzureADApplicationKeyCredential -ObjectId $appCreated.ObjectId -CustomKeyIdentifier $base64CertHash -Value $base64CertVal -StartDate ([DateTime]::Now) -EndDate $certificate.GetExpirationDateString() -Type AsymmetricX509Cert -Usage Verify
+    $appCertPwd = New-AzureADApplicationKeyCredential -ObjectId $appCreated.ObjectId -CustomKeyIdentifier $base64CertHash -Value $base64CertVal -StartDate ([DateTime]::Now) -EndDate $certificate.NotAfter -Type AsymmetricX509Cert -Usage Verify
     $spn = New-AzureADServicePrincipal -AppId $appCreated.AppId -AccountEnabled $true -DisplayName $appCreated.DisplayName
     $permissions = ""
     if ($azAppPermissions.HasFlag([ApplicationPermissions]::MSGraph)) {

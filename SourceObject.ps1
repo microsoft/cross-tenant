@@ -1,6 +1,3 @@
-$source = "sourceMBX@man.eu"
-#This script works with 1 mailbox only!
-
 #################################################################################
 #
 # The sample scripts are not supported under any Microsoft standard support 
@@ -16,9 +13,22 @@ $source = "sourceMBX@man.eu"
 # even if Microsoft has been advised of the possibility of such damages.
 #
 #################################################################################
+param(
+	[Parameter(Mandatory=$true)][string] $source,
+	[string]$filepath = "C:\temp\source.csv"
+)
+
+#!!! MODIFY VALUE !!!
+$T2Tgroup = "T2T-Migration"
+
+if(!(Get-Command Get-Mailbox -ErrorAction SilentlyContinue))
+{
+	Write-Host "Exchange PowerShell module not loaded" -foregroundcolor red
+	break
+}
 
 $mbx = Get-Mailbox $source
 $email = $mbx | foreach { $_.EmailAddresses -like "smtp:*.onmicrosoft.com" } | select -First 1
-$mbx | select @{name="EmailAddress";expression={$_.PrimarySmtpAddress}},ExchangeGuid,ArchiveGuid,LegacyExchangeDN,@{name="TargetAddress";expression={$email}} | export-csv c:\temp\source.csv -NoTypeInformation
-Add-DistributionGroupMember "T2T-Migration" -Member $source
+$mbx | select @{name="EmailAddress";expression={$_.PrimarySmtpAddress}},ExchangeGuid,ArchiveGuid,LegacyExchangeDN,@{name="TargetAddress";expression={$email}} | export-csv $filename -NoTypeInformation
+Add-DistributionGroupMember $T2Tgroup -Member $source
 Invoke-Item C:\temp

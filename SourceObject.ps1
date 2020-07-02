@@ -18,7 +18,7 @@
 #################################################################################
 param(
 	[Parameter(Mandatory=$true)][string] $source,
-	[string]$filepath = "C:\temp\source.csv"
+	[string]$filename = "C:\temp\source.csv"
 )
 
 #!!! MODIFY VALUE BELOW to specified MailboxMovePublishedScopes group in OrganizationRelationship !!!

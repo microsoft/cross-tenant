@@ -12,14 +12,18 @@
 # arising out of the use of or inability to use the sample scripts or documentation, 
 # even if Microsoft has been advised of the possibility of such damages.
 #
+# Author: Thomas Rudolf (Senior Premier Field Engineer)
+# Date: 2020-07-02
+#
 #################################################################################
 param(
 	[Parameter(Mandatory=$true)][string] $source,
 	[string]$filepath = "C:\temp\source.csv"
 )
 
-#!!! MODIFY VALUE !!!
+#!!! MODIFY VALUE BELOW to specified MailboxMovePublishedScopes group in OrganizationRelationship !!!
 $T2Tgroup = "T2T-Migration"
+#!!! MODIFY VALUE ABOVE !!!
 
 if(!(Get-Command Get-Mailbox -ErrorAction SilentlyContinue))
 {

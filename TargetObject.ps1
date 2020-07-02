@@ -1,5 +1,3 @@
-$target = "TargetMBX@traton.com"
-
 #################################################################################
 #
 # The sample scripts are not supported under any Microsoft standard support 
@@ -16,7 +14,24 @@ $target = "TargetMBX@traton.com"
 #
 #################################################################################
 
-$source = import-csv c:\temp\source.csv
+param(
+	[Parameter(Mandatory=$true)][string] $target,
+	[string]$filepath = "C:\temp\source.csv"
+)
+
+if(!(Get-Command Get-Mailbox -ErrorAction SilentlyContinue))
+{
+	Write-Host "Exchange PowerShell module not loaded" -foregroundcolor red
+	break
+}
+
+$source = Import-CSV $filepath
+if(!$source)
+{
+	Write-Host "Import of CSV file failed" -foregroundcolor red
+	break
+}
+
 if(!(Get-Contact $target -ErrorAction SilentlyContinue))
 {
 #necessary???

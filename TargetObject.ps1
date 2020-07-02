@@ -19,7 +19,7 @@
 
 param(
 	[Parameter(Mandatory=$true)][string] $target,
-	[string]$filepath = "C:\temp\source.csv"
+	[string]$filename = "C:\temp\source.csv"
 )
 
 if(!(Get-Command Get-Mailbox -ErrorAction SilentlyContinue))
@@ -28,20 +28,20 @@ if(!(Get-Command Get-Mailbox -ErrorAction SilentlyContinue))
 	break
 }
 
-$source = Import-CSV $filepath
+$source = Import-CSV $filename
 if(!$source)
 {
 	Write-Host "Import of CSV file failed" -foregroundcolor red
 	break
 }
 
-if(!(Get-Contact $target -ErrorAction SilentlyContinue))
+#Is this really necessary? Customer often syncing contacts for collaboration
+if((Get-Contact $target -ErrorAction SilentlyContinue))
 {
-#necessary???
+	Remove-MailContact $target -Confirm:$false
 	Write-Host "Note: Existing Contact removed" -foregroundcolor yellow
-	Remove-MailContact $target
 }
-$target2 = Get-MailUser $target
+$target2 = Get-MailUser $target -ErrorAction SilentlyContinue
 if($target2 -eq $null)
 {
 	Write-Host "MailUser not existing!" -foregroundcolor red

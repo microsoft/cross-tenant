@@ -13,7 +13,7 @@
 # even if Microsoft has been advised of the possibility of such damages.
 #
 # Author: Thomas Rudolf (Senior Premier Field Engineer)
-# Date: 2020-07-02
+# Date: 2020-07-03
 #
 #################################################################################
 param(
@@ -21,9 +21,7 @@ param(
 	[string]$filename = "C:\temp\source.csv"
 )
 
-#!!! MODIFY VALUE BELOW to specified MailboxMovePublishedScopes group in OrganizationRelationship !!!
-$T2Tgroup = "T2T-Migration"
-#!!! MODIFY VALUE ABOVE !!!
+$T2Tgroup = (Get-OrganizationRelationship | where { $_.MailboxMovePublishedScopes }).MailboxMovePublishedScopes
 
 if(!(Get-Command Get-Mailbox -ErrorAction SilentlyContinue))
 {
@@ -35,4 +33,5 @@ $mbx = Get-Mailbox $source
 $email = $mbx | foreach { $_.EmailAddresses -like "smtp:*.onmicrosoft.com" } | select -First 1
 $mbx | select @{name="EmailAddress";expression={$_.PrimarySmtpAddress}},ExchangeGuid,ArchiveGuid,LegacyExchangeDN,@{name="TargetAddress";expression={$email}} | export-csv $filename -NoTypeInformation
 Add-DistributionGroupMember $T2Tgroup -Member $source
-Invoke-Item C:\temp
+Invoke-Item (Split-Path $filename)
+Write-Host "Done. Please copy $filename to Target tenant." -foregroundcolor green

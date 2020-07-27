@@ -68,7 +68,7 @@
    ResourceTenantId - The resource tenant id.
 
    .EXAMPLE
-   SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain contoso.onmicrosoft.com -TargetTenantDomain fabrikam.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt"
+   SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain contoso.onmicrosoft.com -TargetTenantDomain fabrikam.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt" -ExistingApplicationId d7404497-1e2f-4b58-bdd5-93e82dad91a4
 
    .EXAMPLE
    SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain contoso.onmicrosoft.com -TargetTenantDomain fabrikam.onmicrosoft.com -ResourceTenantId <ContosoTenantId>

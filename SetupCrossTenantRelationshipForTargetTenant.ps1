@@ -335,7 +335,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 
     $policy = New-AzureKeyVaultCertificatePolicy -SubjectName $certSubj -IssuerName Self -ValidityInMonths 12
     $certReq = Add-AzureKeyVaultCertificate -VaultName $kvName -Name $certName -CertificatePolicy $policy
-    Write-Host "Self signed certificate requested in key vault - $kvName. Certifiacte name - $certName" -Foreground Green
+    Write-Host "Self signed certificate requested in key vault - $kvName. Certificate name - $certName" -Foreground Green
     $tries = 5
     $certPrivateKey = $null
     while ($tries -gt 0) {
@@ -430,7 +430,7 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
     
     $base64CertHash = [System.Convert]::ToBase64String($certificate.GetCertHash())
     $base64CertVal = [System.Convert]::ToBase64String($certificate.GetRawCertData())
-    $appCertPwd = New-AzureADApplicationKeyCredential -ObjectId $appCreated.ObjectId -CustomKeyIdentifier $base64CertHash -Value $base64CertVal -StartDate ([DateTime]::Now) -EndDate $certificate.EndDate.AddDays(-2) -Type AsymmetricX509Cert -Usage Verify
+    $appCertPwd = New-AzureADApplicationKeyCredential -ObjectId $appCreated.ObjectId -CustomKeyIdentifier $base64CertHash -Value $base64CertVal -StartDate ([DateTime]::Now) -EndDate ([DateTime]::Now).AddDays(363) -Type AsymmetricX509Cert -Usage Verify
     $spn = New-AzureADServicePrincipal -AppId $appCreated.AppId -AccountEnabled $true -DisplayName $appCreated.DisplayName
     $permissions = ""
     if ($azAppPermissions.HasFlag([ApplicationPermissions]::MSGraph)) {
@@ -551,7 +551,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                     -ExchangeRemoteMove:$true
                                     
     $MigrationEndpoint
-    Write-Host "MigrationEndpoint created in $targetTenant for target $resourceTenantDomain" -Foreground Green
+    Write-Host "MigrationEndpoint created in $targetTenant for source $resourceTenantDomain" -Foreground Green
 }
 
 

@@ -141,7 +141,7 @@ param
 
     [Parameter(HelpMessage='Existing Application Id. If existing application Id is present and can be found, new application will not be created.', ParameterSetName = 'TargetSetupAll')]
     [Parameter(HelpMessage='Existing Application Id. If existing application Id is present and can be found, new application will not be created.', ParameterSetName = 'TargetSetupAzure')]
-    [guid]$ExistingApplicationId  = $null
+    [guid]$ExistingApplicationId  = [guid]::Empty
 )
 
 $ErrorActionPreference = 'Stop'
@@ -280,11 +280,6 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
                                                [string]$auditStorageAcntRG, `
                                                [string]$auditStorageAcntName, `
                                                [guid]$existingApplicationId) {
-
-    if ($Null -ne (Get-AzureADApplication -Filter "AppId eq '$ExistingApplicationId'")) {
-        Write-Warning "Existing application '$ExistingApplicationId' found. Skipping new Azure KeyVault creation."
-    }
-
     if ([string]::IsNullOrWhiteSpace($certName)) {
         $randomPrefix = [Random]::new().Next(0, 10000)
         $certName = $randomPrefix.ToString() + "TenantFriendingAppSecret"
@@ -400,8 +395,12 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 }
 
 function Create-Application([string]$targetTenantDomain, [string]$resourceTenantDomain, $certificate, $spns, $azAppPermissions, [guid]$ExistingApplicationId) {
-    if ($Null -ne (Get-AzureADApplication -Filter "AppId eq '$ExistingApplicationId'")) {
-        Write-Warning "Existing application '$ExistingApplicationId' found. Skipping new application creation."
+    if ($Null -ne $ExistingApplicationId) {
+        $existingApp = Get-AzureADApplication -Filter "AppId eq '$ExistingApplicationId'"
+        if ($Null -ne $existingApp) {
+            Write-Warning "Existing application '$ExistingApplicationId' found. Skipping new application creation."
+            return (Get-AzureADTenantDetail).ObjectId, $existingApp
+        }
     }
 
     #### Collect all the permissions first ####

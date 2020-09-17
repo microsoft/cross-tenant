@@ -528,7 +528,7 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
 }
 
 function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resourceTenantDomain, [string]$resourceTenantId, [string]$appId, [string]$appSecretKeyVaultUrl) {
-    # 1. Create/Update organization relationship
+    # 1. Create/Update organization relationship.
     # 2. Create migration endpoint.
 
     Write-Host "Setting up exchange components on target tenant: $targetTenant"

@@ -395,7 +395,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 }
 
 function Create-Application([string]$targetTenantDomain, [string]$resourceTenantDomain, $certificate, $spns, $azAppPermissions, [guid]$ExistingApplicationId) {
-    if ($Null -ne $ExistingApplicationId) {
+    if ([guid]::Empty -ne $ExistingApplicationId) {
         $existingApp = Get-AzureADApplication -Filter "AppId eq '$ExistingApplicationId'"
         if ($Null -ne $existingApp) {
             Write-Warning "Existing application '$ExistingApplicationId' found. Skipping new application creation."

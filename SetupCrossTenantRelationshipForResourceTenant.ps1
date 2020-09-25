@@ -114,7 +114,7 @@ function UserPrompt() {
     Write-Host "Welcome to the Cross-tenant mailbox migration preview! Before running this script, please be sure to review the details provided on docs.microsoft.com at the following URL: `nhttps://docs.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-mailbox-migration"
     Write-Host "It is also recommended before running this script to review the script in a script editor or Notepad prior to running."`n
     Write-Host "For general feedback and / or questions, please contact crosstenantmigrationpreview@service.microsoft.com.`nThis is not a support alias and should not be used if you are currently experiencing an issue and need immediate assistance."`n
-    $title = "If you are ready to begin configuring your tenants, select 'Y'. If you need to review any additional details and proceed at a later time, select 'N'."
+    $title = "If you are ready to begin configuring your tenants, select 'Y'. `nIf you need to review any additional details and proceed at a later time, select 'N'."
     $message = "Do you wish to proceed?"
     $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
     $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"

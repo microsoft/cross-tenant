@@ -553,7 +553,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
         $maxLength = [System.Math]::Min(64, $orgRelName.Length)
         $orgRelName = $orgRelName.SubString(0, $maxLength)
 
-        Write-Verbose "Creating organization relationship: $orgRelName in $targetTenant. DomainName: $resourceTenantId, OAuthApplicationId: $appId"
+        Write-Verbose "Creating organization relationship: $orgRelName in $targetTenant. DomainName: $resourceTenantId"
         New-OrganizationRelationship `
             -DomainNames $resourceTenantId `
             -Enabled:$true `

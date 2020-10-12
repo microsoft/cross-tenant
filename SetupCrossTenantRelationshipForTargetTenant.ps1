@@ -180,9 +180,8 @@ function Main() {
         Write-Verbose "Found subscription - $($SubscriptionId | Out-String)"
         Set-AzureRmContext -SubscriptionId $SubscriptionId
 
-        ## Grab all the SPNs ##
-        $spns = Get-AzureADServicePrincipal -All $true
-        $exoAppSpn = $spns | ? { $_.AppId -eq $EXO_APP_ID }
+        ## Grab the EXO APP SPN ##
+        $exoAppSpn = Get-AzureADServicePrincipal -Filter "AppId eq '$EXO_APP_ID'"
         Write-Verbose "Found exchange service principal in $TargetTenantDomain - $($exoAppSpn | Out-String)"
 
         $certificatePublicKey, $certificatePrivateKey = Create-KeyVaultAndGenerateCertificate `

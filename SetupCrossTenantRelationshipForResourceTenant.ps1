@@ -15,8 +15,8 @@
 #################################################################################
 
 <# .SYNOPSIS
-    This script can be used by a tenant that wishes to pull resources out of another tenant.
-    For example contoso.com would run this script in order to pull mailboxes from fabrikam.com tenant.
+    This script can be used by a tenant that wishes to move resources out of their tenant.
+    For example fabrikam.com would run this script in order for the contoso.com tenant to pull mailboxes from the fabrikam.com tenant.
 
     This script is intended for the resource tenant in above example fabrikam.com, and it sets up the organization relationship in exchange to authorize the migration.
     Following are key properties in organization relationship used here:
@@ -37,7 +37,7 @@
    TargetTenantId - The target tenant id.
 
    .EXAMPLE
-   SetupCrossTenantRelationshipForResourceTenant.ps1 -ResourceTenantDomain contoso.onmicrosoft.com -TargetTenantDomain fabrikam.onmicrosoft.com -TargetTenantId d925e0c6-d4db-40c6-a864-49db24af0460 -SourceMailboxMovePublishedScopes "SecurityGroupName"
+   SetupCrossTenantRelationshipForResourceTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -TargetTenantId d925e0c6-d4db-40c6-a864-49db24af0460 -SourceMailboxMovePublishedScopes "SecurityGroupName"
 #>
 
 [CmdletBinding(SupportsShouldProcess)]

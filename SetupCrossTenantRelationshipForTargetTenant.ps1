@@ -166,7 +166,7 @@ function Main() {
 
         $azureADAccount = Connect-AzureAD
         Write-Verbose "Connected to AzureAD - $($azureADAccount | Out-String)"
-        $azureRMAccount = Login-AzureRmAccount
+        $azureRMAccount = Connect-AzAccount
         Write-Verbose "Connected to Azure RM Account - $($azureRMAccount | Out-String)"
 
         Write-Host "Setting up key vault in the $TargetTenantDomain tenant"

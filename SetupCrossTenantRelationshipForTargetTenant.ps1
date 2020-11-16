@@ -166,11 +166,11 @@ function Main() {
 
         $azureADAccount = Connect-AzureAD
         Write-Verbose "Connected to AzureAD - $($azureADAccount | Out-String)"
-        $azureRMAccount = Connect-AzAccount
-        Write-Verbose "Connected to Azure RM Account - $($azureRMAccount | Out-String)"
+        $azAccount = Connect-AzAccount
+        Write-Verbose "Connected to Az Account - $($azAccount | Out-String)"
 
         Write-Host "Setting up key vault in the $TargetTenantDomain tenant"
-        $subscriptions = Get-AzureRmSubscription
+        $subscriptions = Get-AzSubscription
         Write-Verbose "SubscriptionId - $SubscriptionId was provided. Searching for it in $($subscriptions | Out-String)"
         $subscription = $subscriptions | ? { $_.SubscriptionId -eq $SubscriptionId}
         if (-not $subscription) {
@@ -178,7 +178,7 @@ function Main() {
         }
 
         Write-Verbose "Found subscription - $($SubscriptionId | Out-String)"
-        Set-AzureRmContext -SubscriptionId $SubscriptionId
+        Set-AzContext -Subscription $SubscriptionId
 
         ## Grab the EXO & MSGraph APP SPN ##
         $spns = @()
@@ -233,18 +233,18 @@ function Check-ExchangeOnlinePowershellConnection {
 
 function Import-AzureModules() {
     $desiredAzureModules = @{
-        "AzureAD"           = [Version]"2.0.2.4";
-        "AzureRM.Insights"  = [Version]"5.0.0";
-        "AzureRM.KeyVault"  = [Version]"5.0.0";
-        "AzureRM.Profile"   = [Version]"5.0.0";
-        "AzureRM.Resources" = [Version]"6.0.0";
+        "AzureAD"      = [Version]"2.0.2.4";
+        "Az.Monitor"   = [Version]"1.2.0";
+        "Az.KeyVault"  = [Version]"1.2.0";
+        "Az.Accounts"  = [Version]"1.5.2";
+        "Az.Resources" = [Version]"1.3.1";
     }
 
     $moduleMissingErrors = @()
     $desiredAzureModules.Keys | % {
         $desiredVersion = [Version]($desiredAzureModules[$_])
-        $desiredAzureRmModule = (Get-Module $_ -ListAvailable -Verbose:$false | ? { $_.Version -ge $desiredVersion})
-        if (-not $desiredAzureRmModule) {
+        $desiredAzModule = (Get-Module $_ -ListAvailable -Verbose:$false | ? { $_.Version -ge $desiredVersion})
+        if (-not $desiredAzModule) {
             $moduleMissingErrors += "Powershell module: [$_] minimum version [$($desiredAzureModules[$_])] is required for running this script. Please install this module using: Install-Module $_ -AllowClobber"
         }
     }
@@ -290,7 +290,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 
     $resGrp = $null
     try {
-        $resGrp = Get-AzureRmResourceGroup -Name $resourceGrpName
+        $resGrp = Get-AzResourceGroup -Name $resourceGrpName
         if ($resGrp) {
             Write-Verbose "Resource group $resourceGrpName already exists."
         }
@@ -300,13 +300,13 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 
     if (-not $resGrp) {
         Write-Verbose "Creating resource group - $resourceGrpName"
-        $resGrp = New-AzureRmResourceGroup -Name $resourceGrpName -Location $kvLocation
+        $resGrp = New-AzResourceGroup -Name $resourceGrpName -Location $kvLocation
         Write-Host "Resource Group $resourceGrpName successfully created" -Foreground Green
     }
 
     $kv = $null
     try {
-        $kv = Get-AzureRmKeyVault -Name $kvName -ResourceGroupName $resourceGrpName
+        $kv = Get-AzKeyVault -VaultName $kvName -ResourceGroupName $resourceGrpName
     } catch {
         Write-Verbose "KeyVault $kvName not found, this will be created."
     }
@@ -315,27 +315,27 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
         Write-Verbose "Keyvault $kvName already exists."
     } else {
         Write-Verbose "Creating KeyVault $kvName"
-        $kv = New-AzureRmKeyVault -Name $kvName -Location $kvLocation -ResourceGroupName $resourceGrpName
+        $kv = New-AzKeyVault -Name $kvName -Location $kvLocation -ResourceGroupName $resourceGrpName
         Write-Host "KeyVault $kvName successfully created" -Foreground Green
     }
 
     if ($auditStorageAcntRG -and $auditStorageAcntName) {
         Write-Verbose "Setting up auditing for key vault $kvName"
-        $storageAcnt = Get-AzureRmStorageAccount -ResourceGroupName $auditStorageAcntRG -Name $auditStorageAcntName
-        Set-AzureRmDiagnosticSetting -ResourceId $kv.ResourceId -StorageAccountId $storageAcnt.Id -Enabled $true -Categories AuditEvent | Out-Null
+        $storageAcnt = Get-AzStorageAccount -ResourceGroupName $auditStorageAcntRG -Name $auditStorageAcntName
+        Set-AzDiagnosticSetting -ResourceId $kv.ResourceId -StorageAccountId $storageAcnt.Id -Enabled $true -Category AuditEvent | Out-Null
         Write-Host "Auditing setup successfully for $kvName" -Foreground Green
     }
 
     Write-Verbose "Setting up access for key vault $kvName"
-    Set-AzureRmKeyVaultAccessPolicy -ResourceId $kv.ResourceId -ObjectId $exoAppObjectId -PermissionsToSecrets get,list -PermissionsToCertificates get,list | Out-Null
+    Set-AzKeyVaultAccessPolicy -ResourceId $kv.ResourceId -ObjectId $exoAppObjectId -PermissionsToSecrets get,list -PermissionsToCertificates get,list | Out-Null
     Write-Host "Exchange app given access to KeyVault $kvName" -Foreground Green
     try {
-        $cert = Get-AzureKeyVaultCertificate -VaultName $kvName -Name $certName
+        $cert = Get-AzKeyVaultCertificate -VaultName $kvName -Name $certName
         if ($cert.Certificate) {
             Write-Verbose "Certificate $certName already exists in $kvName"
             if ($retrieveCertPrivateKey -eq $true) {
                 Write-Verbose "Retrieving certificate private key"
-                $certPrivateKey = Get-AzureKeyVaultSecret -VaultName $kvName -Name $certName
+                $certPrivateKey = Get-AzKeyVaultSecret -VaultName $kvName -Name $certName
             }
 
             return $cert, $certPrivateKey
@@ -349,19 +349,19 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
         Write-Verbose "Cert subject not provided, generated subject - $certSubj"
     }
 
-    $policy = New-AzureKeyVaultCertificatePolicy -SubjectName $certSubj -IssuerName Self -ValidityInMonths 12
-    $certReq = Add-AzureKeyVaultCertificate -VaultName $kvName -Name $certName -CertificatePolicy $policy
+    $policy = New-AzKeyVaultCertificatePolicy -SubjectName $certSubj -IssuerName Self -ValidityInMonths 12
+    $certReq = Add-AzKeyVaultCertificate -VaultName $kvName -Name $certName -CertificatePolicy $policy
     Write-Host "Self signed certificate requested in key vault - $kvName. Certificate name - $certName" -Foreground Green
     $tries = 5
     $certPrivateKey = $null
     while ($tries -gt 0) {
         try {
             Write-Verbose "Looking for certificate $certName. Attempt - $(6 - $tries)"
-            $cert = Get-AzureKeyVaultCertificate -VaultName $kvName -Name $certName
+            $cert = Get-AzKeyVaultCertificate -VaultName $kvName -Name $certName
             if ($cert.Certificate) {
                 Write-Verbose "Certificate found - $($cert | Out-String)"
                 if ($retrieveCertPrivateKey -eq $true) {
-                    $certPrivateKey = Get-AzureKeyVaultSecret -VaultName $kvName -Name $certName
+                    $certPrivateKey = Get-AzKeyVaultSecret -VaultName $kvName -Name $certName
                     if ($certPrivateKey) {
                         Write-Verbose "Certificate private key also found"
                         break;

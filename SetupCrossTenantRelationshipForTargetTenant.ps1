@@ -478,8 +478,15 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
 function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$resourceUri, $appSecretCert) {
     $authority = "https://login.microsoftonline.com/$authContextTenant/oauth2/token"
     $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList $authority
-
-    $certBytes = [System.Convert]::FromBase64String($appSecretCert.SecretValueText)
+    $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($appSecretCert.SecretValue)
+    
+    try {
+    $secretValueText = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+    }finally {
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+    }
+    
+    $certBytes = [System.Convert]::FromBase64String($secretValueText)
     $clientCreds = new-object Microsoft.IdentityModel.Clients.ActiveDirectory.ClientAssertionCertificate -ArgumentList $appId, ([System.Security.Cryptography.X509Certificates.X509Certificate2]::new($certBytes))
     Write-Verbose "Acquiring token resourceAppIdURI $resourceUri appSecret $appSecretCert"
     return $authContext.AcquireTokenAsync($resourceUri, $clientCreds).Result

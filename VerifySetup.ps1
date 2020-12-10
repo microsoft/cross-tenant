@@ -247,7 +247,7 @@ function Verify-OrganizationRelationship([string]$partnerTenantId, [string]$appI
         }
         
         if ($orgRel.MailboxMoveCapability -ne 'Inbound') {
-            $errors += "MailboxMoveCapability is invalid in Organization relationship with [$partnerTenantId]. It should be [Inbound] found [$orgRel.MailboxMoveCapability]"
+            $errors += "MailboxMoveCapability is invalid in Organization relationship with [$partnerTenantId]. It should be [Inbound] found [$($orgRel.MailboxMoveCapability)]"
         }
         
         if ($errors) {
@@ -259,11 +259,11 @@ function Verify-OrganizationRelationship([string]$partnerTenantId, [string]$appI
         }
         
         if ($orgRel.MailboxMoveCapability -ne 'RemoteOutbound') {
-            $errors += "MailboxMoveCapability is invalid in Organization relationship with [$partnerTenantId]. It should be [RemoteOutbound] found [$orgRel.MailboxMoveCapability]"
+            $errors += "MailboxMoveCapability is invalid in Organization relationship with [$partnerTenantId]. It should be [RemoteOutbound] found [$($orgRel.MailboxMoveCapability)]"
         }
         
         if ($orgRel.OAuthApplicationId -ne $appId) {
-            $errors += "Mailbox Migration ApplicationId is not whitelisted in the Organization Relationship with [$partnerTenantId]. Expected [$appId] found [$orgRel.ApplicationId]"
+            $errors += "Mailbox Migration ApplicationId is not whitelisted in the Organization Relationship with [$partnerTenantId]. Expected [$appId] found [$($orgRel.ApplicationId)]"
         }
         
         if (!$orgRel.MailboxMovePublishedScopes) {
@@ -283,19 +283,19 @@ function Verify-MigrationEndpoint([string]$partnerTenantDomain, [string]$appId, 
     }
     
     if ($migEp.RemoteTenant -ne $partnerTenantDomain) {
-        $errors += "RemoteTenant does not match in Migration Endpoint. Expected [$partnerTenantDomain] found [$migEp.RemoteTenant]"
+        $errors += "RemoteTenant does not match in Migration Endpoint. Expected [$partnerTenantDomain] found [$($migEp.RemoteTenant)]"
     }
     
     if ($migEp.ApplicationId -ne $appId) {
-        $errors += "ApplicationId does not match in Migration Endpoint. Expected [$appId] found [$migEp.ApplicationId]"
+        $errors += "ApplicationId does not match in Migration Endpoint. Expected [$appId] found [$($migEp.ApplicationId)]"
     }
     
     if ($migEp.AppSecretKeyVaultUrl -ne $appKvUrl) {
-        $errors += "AppSecretKeyVaultUrl does not match in Migration Endpoint. Expected [$appKvUrl] found [$migEp.AppSecretKeyVaultUrl]"
+        $errors += "AppSecretKeyVaultUrl does not match in Migration Endpoint. Expected [$appKvUrl] found [$($migEp.AppSecretKeyVaultUrl)]"
     }
     
     if (!$migEp.IsRemote) {
-        $errors += "IsRemote does not match in Migration Endpoint. Expected [true] found [$migEp.IsRemote]"
+        $errors += "IsRemote does not match in Migration Endpoint. Expected [true] found [$($migEp.IsRemote)]"
     }
     
     return $errors

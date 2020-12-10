@@ -493,11 +493,12 @@ function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$r
 }
 
 function Get-AccessTokenWithUserPrompt([string]$authContextTenant, [string]$resourceUri) {
-    $authority = "https://login.microsoftonline.com/$authContextTenant/oauth2/token"
+    $authority = "https://login.microsoftonline.com/common/oauth2/token"
     $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList $authority
     Write-Verbose "Acquiring token resourceAppIdURI $resourceUri"
-    return $authContext.AcquireToken($resourceUri, $FIRSTPARTY_POWERSHELL_CLIENTID, $FIRSTPARTY_POWERSHELL_CLIENT_REDIRECT_URI, [Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always)
-}
+    $platformParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters -ArgumentList ([Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always)
+    return $authContext.AcquireTokenAsync($resourceUri, $FIRSTPARTY_POWERSHELL_CLIENTID, $FIRSTPARTY_POWERSHELL_CLIENT_REDIRECT_URI, $platformParams).GetAwaiter().GetResult()
+    }
 
 function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDomain, [string]$resourceTenantDomainAdminEmail, [string]$appId, $appSecretCert, [string]$appReplyUrl, [string]$appName) {
     $authRes = $null

@@ -524,7 +524,7 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
             If you recognize this application please click below to provide your consent. `
             To authorize this application to be used for office 365 mailbox migration, please add its application id [$appId] to your organization relationship with [$invitingTenant] in the OAuthApplicationId property.`
             If the 'Accept Invitation' button does not properly work, the URL will state application [$appName] cannot be accessed at this time after clicking on the button.`
-            Please copy the link in the email and paste it directly into the browser."}
+            Please copy the link in the email and paste it directly into the browser."
         }
     }
 

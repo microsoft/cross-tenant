@@ -46,7 +46,19 @@
    .PARAMETER KeyVaultLocation
    KeyVaultLocation - the location of the key vault
 
-   .PARAMETER CertificateName
+   .PARAMETER KeyVaultAuditStorageResourceGroup
+   KeyVaultAuditStorageResourceGroup - the key vault audit storage resource group
+
+   .PARAMETER KeyVaultAuditStorageAccountName
+   KeyVaultAuditStorageAccountName - the key vault audit storage account name
+
+   .PARAMETER KeyVaultAuditStorageAccountLocation
+   KeyVaultAuditStorageAccountLocation - the key vault audit storage account location
+
+   .PARAMETER KeyVaultAuditStorageAccountSKU
+   KeyVaultAuditStorageAccountSKU - the key vault audit storage account sku
+
+  .PARAMETER CertificateName
    CertificateName - the name of certificate in key vault
 
    .PARAMETER CertificateSubject
@@ -107,7 +119,25 @@ param
 
     [Parameter(Mandatory = $false, HelpMessage='Storage account name for storing key vault audit logs', ParameterSetName = 'TargetSetupAll')]
     [Parameter(Mandatory = $false, HelpMessage='Storage account name for storing key vault audit logs', ParameterSetName = 'TargetSetupAzure')]
+    [ValidateScript({
+        if ($_ -cmatch "^[a-z0-9]{3,24}$")
+        {
+            $true
+        }
+        else
+        {
+            throw [System.Management.Automation.ValidationMetadataException] "Storage account names must be between 3 and 24 characters in length and may contain numbers and lowercase letters only."
+        }
+        })]
     [string]$KeyVaultAuditStorageAccountName,
+
+    [Parameter(Mandatory = $false, HelpMessage='Storage account location', ParameterSetName = 'TargetSetupAll')]
+    [Parameter(Mandatory = $false, HelpMessage='Storage account location', ParameterSetName = 'TargetSetupAzure')]
+    [string]$KeyVaultAuditStorageAccountLocation,
+
+    [Parameter(Mandatory = $false, HelpMessage='Storage account SKU', ParameterSetName = 'TargetSetupAll')]
+    [Parameter(Mandatory = $false, HelpMessage='Storage account SKU', ParameterSetName = 'TargetSetupAzure')]
+    [string]$KeyVaultAuditStorageAccountSKU,
 
     [Parameter(HelpMessage='Certificate name to use', ParameterSetName = 'TargetSetupAll')]
     [Parameter(HelpMessage='Certificate name to use', ParameterSetName = 'TargetSetupAzure')]
@@ -136,6 +166,11 @@ param
 
     [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupAll')]
     [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupExchange')]
+    [Parameter(Mandatory = $false, HelpMessage='Migration endpoint MaxConcurrentMigrations')]
+    [int]$MigrationEndpointMaxConcurrentMigrations = 20,
+
+    [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupAll')]
+    [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupExchange')]
     [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) })]
     $ResourceTenantId,
 
@@ -147,7 +182,7 @@ param
 $ErrorActionPreference = 'Stop'
 
 $MS_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000"
-$MS_GRAPH_APP_ROLE = "Directory.ReadWrite.All"
+$MS_GRAPH_APP_ROLE = "User.Invite.All"
 $EXO_APP_ID = "00000002-0000-0ff1-ce00-000000000000"
 $EXO_APP_ROLE = "Mailbox.Migration"
 $REPLY_URL = "https://office.com"
@@ -182,7 +217,7 @@ function Main() {
 
         ## Grab the EXO & MSGraph APP SPN ##
         $spns = @()
-        $msGraphSpn=Get-AzureADServicePrincipal -Filter "AppId eq '$MS_GRAPH_APP_ID'"
+        $msGraphSpn = Get-AzureADServicePrincipal -Filter "AppId eq '$MS_GRAPH_APP_ID'"
         $exoAppSpn = Get-AzureADServicePrincipal -Filter "AppId eq '$EXO_APP_ID'"
         $spns += $msGraphSpn
         $spns += $exoAppSpn
@@ -200,6 +235,8 @@ function Main() {
                                                             $UseAppAndCertGeneratedForSendingInvitation `
                                                             $KeyVaultAuditStorageResourceGroup `
                                                             $KeyVaultAuditStorageAccountName `
+                                                            $KeyVaultAuditStorageAccountLocation `
+                                                            $KeyVaultAuditStorageAccountSKU `
                                                             $ExistingApplicationId
 
         Write-Verbose "Creating an application in $TargetTenantDomain"
@@ -220,7 +257,7 @@ function Main() {
     if ($PSCmdlet.ParameterSetName -eq 'TargetSetupAll' -or $PSCmdlet.ParameterSetName -eq 'TargetSetupExchange') {
         $AppId = Ensure-VariableIsPopulated "AppId" "Please enter the application id for the azure ad application to be used for mailbox migrations"
         $CertificateId = Ensure-VariableIsPopulated "CertificateId" "Please enter the key vault url for the migration app's secret"
-        Run-ExchangeSetupForTargetTenant $TargetTenantDomain $ResourceTenantDomain $ResourceTenantId $AppId $CertificateId
+        Run-ExchangeSetupForTargetTenant $TargetTenantDomain $ResourceTenantDomain $ResourceTenantId $AppId $CertificateId $MigrationEndpointMaxConcurrentMigrations
         Write-Host "Exchange setup complete. Migration endpoint details are available in `$MigrationEndpoint variable" -Foreground Green
     }
 }
@@ -238,6 +275,7 @@ function Import-AzureModules() {
         "Az.KeyVault"  = [Version]"1.2.0";
         "Az.Accounts"  = [Version]"1.5.2";
         "Az.Resources" = [Version]"1.3.1";
+        "Az.Storage"   = [Version]"1.9.0";
     }
 
     $moduleMissingErrors = @()
@@ -282,6 +320,8 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
                                                $retrieveCertPrivateKey, `
                                                [string]$auditStorageAcntRG, `
                                                [string]$auditStorageAcntName, `
+                                               [string]$auditStorageAcntLocation, `
+                                               [string]$auditStorageAcntSKU, `
                                                [guid]$existingApplicationId) {
     if ([string]::IsNullOrWhiteSpace($certName)) {
         $randomPrefix = [Random]::new().Next(0, 10000)
@@ -319,9 +359,24 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
         Write-Host "KeyVault $kvName successfully created" -Foreground Green
     }
 
+    $storageAcnt = $null
     if ($auditStorageAcntRG -and $auditStorageAcntName) {
         Write-Verbose "Setting up auditing for key vault $kvName"
-        $storageAcnt = Get-AzStorageAccount -ResourceGroupName $auditStorageAcntRG -Name $auditStorageAcntName
+
+        $storageResGrp = Get-AzStorageAccount -ResourceGroupName $auditStorageAcntRG -Name $auditStorageAcntName -ErrorAction SilentlyContinue    
+        if ($storageResGrp -eq $null)
+        {
+            Write-Verbose "Resource group '$auditStorageAcntRG' not found... creating resource group in '$auditStorageAcntLocation'"
+            $storageResGrp = New-AzResourceGroup -Name $auditStorageAcntRG -Location $auditStorageAcntLocation
+        }
+
+        $storageAcnt = Get-AzStorageAccount -ResourceGroupName $auditStorageAcntRG -Name $auditStorageAcntName -ErrorAction SilentlyContinue    
+        if ($storageAcnt -eq $null)
+        {
+            Write-Verbose "Az storage account '$auditStorageAcntName' not found... creating storage account with Location '$auditStorageAcntLocation', SKU '$auditStorageAcntSKU'"
+            $storageAcnt = New-AzStorageAccount -ResourceGroupName $auditStorageAcntRG -AccountName $auditStorageAcntName -Location $auditStorageAcntLocation -SkuName $auditStorageAcntSKU
+        }
+        
         Set-AzDiagnosticSetting -ResourceId $kv.ResourceId -StorageAccountId $storageAcnt.Id -Enabled $true -Category AuditEvent | Out-Null
         Write-Host "Auditing setup successfully for $kvName" -Foreground Green
     }
@@ -540,7 +595,7 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
     }
 }
 
-function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resourceTenantDomain, [string]$resourceTenantId, [string]$appId, [string]$appSecretKeyVaultUrl) {
+function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resourceTenantDomain, [string]$resourceTenantId, [string]$appId, [string]$appSecretKeyVaultUrl, [int]$migEndpointMaxConcurrentMigrations) {
     # 1. Create/Update organization relationship.
     # 2. Create migration endpoint.
 
@@ -575,17 +630,31 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
             -Name $orgRelName
     }
 
-    Write-Verbose "Creating migration endpoint $orgRelName with remote tenant: $resourceTenantDomain, appId: $appId, appSecret: $appSecretKeyVaultUrl"
-    $global:MigrationEndpoint = New-MigrationEndpoint `
-                                    -Name $orgRelName `
-                                    -RemoteTenant $resourceTenantDomain `
-                                    -RemoteServer "outlook.office.com" `
-                                    -ApplicationId $appId `
-                                    -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
-                                    -ExchangeRemoteMove:$true
+    $migEndpoint = Get-MigrationEndpoint -Identity $orgRelName -ErrorAction SilentlyContinue
+    if ($migEndpoint)
+    {
+        Write-Verbose "Remove existing migration endpoint $orgRelName"
+        Remove-MigrationEndpoint -Identity $orgRelName
+    }
 
-    $MigrationEndpoint
-    Write-Host "MigrationEndpoint created in $targetTenant for source $resourceTenantDomain" -Foreground Green
+    try
+    {
+        Write-Verbose "Creating migration endpoint $orgRelName with remote tenant: $resourceTenantDomain, appId: $appId, appSecret: $appSecretKeyVaultUrl"
+        $global:MigrationEndpoint = New-MigrationEndpoint `
+                                        -Name $orgRelName `
+                                        -RemoteTenant $resourceTenantDomain `
+                                        -RemoteServer "outlook.office.com" `
+                                        -ApplicationId $appId `
+                                        -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -ExchangeRemoteMove:$true
+
+        $MigrationEndpoint
+        Write-Host "MigrationEndpoint created in $targetTenant for source $resourceTenantDomain" -Foreground Green
+    }
+    catch
+    {
+        Write-Error "Failed to create migration endpoint, please contact crosstenantmigrationpreview@service.microsoft.com"
+    }
 }
 
 

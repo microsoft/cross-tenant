@@ -90,7 +90,7 @@ param
 $ErrorActionPreference = 'Stop'
 
 $MS_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000"
-$MS_GRAPH_APP_ROLE = "Directory.ReadWrite.All"
+$MS_GRAPH_APP_ROLE = "User.Invite.All"
 $EXO_APP_ID = "00000002-0000-0ff1-ce00-000000000000"
 $EXO_APP_ROLE = "Mailbox.Migration"
 

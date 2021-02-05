@@ -109,6 +109,7 @@ function Run-ExchangeSetupForResourceTenant([string]$targetTenant, [string]$targ
             -MailboxMovePublishedScopes $sourceMailboxMovePublishedScopes
     }
 }
+
 function UserPrompt() {
     Write-Host `n
     Write-Host "Welcome to the Cross-tenant mailbox migration preview! Before running this script, please be sure to review the details provided on docs.microsoft.com at the following URL: `nhttps://docs.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-mailbox-migration"

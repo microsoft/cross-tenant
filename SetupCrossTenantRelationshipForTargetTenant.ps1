@@ -76,11 +76,14 @@
    .PARAMETER TargetTenantDomain
    TargetTenantDomain - The target tenant.
 
+   .PARAMETER MigrationEndpointMaxConcurrentMigrations
+   MigrationEndpointMaxConcurrentMigrations - migration endpoint's MaxConcurrentMigrations
+
    .PARAMETER ResourceTenantId
    ResourceTenantId - The resource tenant id.
 
    .EXAMPLE
-   SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt" -ExistingApplicationId d7404497-1e2f-4b58-bdd5-93e82dad91a4
+   SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt" -KeyVaultAuditStorageResourceGroup TestResGrp0 -KeyVaultAuditStorageAccountName testauditname0 -KeyVaultAuditStorageAccountLocation westus -KeyVaultAuditStorageAccountSKU Standard_GRS -MigrationEndpointMaxConcurrentMigrations 20 -ExistingApplicationId d7404497-1e2f-4b58-bdd5-93e82dad91a4
 
    .EXAMPLE
    SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantId <ContosoTenantId>

@@ -167,8 +167,6 @@ param
     [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) })]
     $TargetTenantDomain,
 
-    [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupAll')]
-    [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupExchange')]
     [Parameter(Mandatory = $false, HelpMessage='Migration endpoint MaxConcurrentMigrations')]
     [int]$MigrationEndpointMaxConcurrentMigrations = 20,
 

@@ -647,6 +647,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -RemoteServer "outlook.office.com" `
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
                                         -ExchangeRemoteMove:$true
 
         $MigrationEndpoint

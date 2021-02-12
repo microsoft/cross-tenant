@@ -168,7 +168,7 @@ param
     $TargetTenantDomain,
 
     [Parameter(Mandatory = $false, HelpMessage='Migration endpoint MaxConcurrentMigrations')]
-    [int]$MigrationEndpointMaxConcurrentMigrations = 20,
+    [int]$MigrationEndpointMaxConcurrentMigrations,
 
     [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupAll')]
     [Parameter(Mandatory = $true, HelpMessage='Target tenant id. This is azure ad directory id or external directory object id in exchange online.', ParameterSetName = 'TargetSetupExchange')]
@@ -638,9 +638,20 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
         Remove-MigrationEndpoint -Identity $orgRelName
     }
 
-    try
+    Write-Verbose "Creating migration endpoint $orgRelName with remote tenant: $resourceTenantDomain, appId: $appId, appSecret: $appSecretKeyVaultUrl"
+
+    if (-not $MigrationEndpointMaxConcurrentMigrations)
     {
-        Write-Verbose "Creating migration endpoint $orgRelName with remote tenant: $resourceTenantDomain, appId: $appId, appSecret: $appSecretKeyVaultUrl"
+        $global:MigrationEndpoint = New-MigrationEndpoint `
+                                        -Name $orgRelName `
+                                        -RemoteTenant $resourceTenantDomain `
+                                        -RemoteServer "outlook.office.com" `
+                                        -ApplicationId $appId `
+                                        -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -ExchangeRemoteMove:$true
+    }
+    else
+    {
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `
                                         -RemoteTenant $resourceTenantDomain `
@@ -649,13 +660,20 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
                                         -ExchangeRemoteMove:$true
-
-        $MigrationEndpoint
-        Write-Host "MigrationEndpoint created in $targetTenant for source $resourceTenantDomain" -Foreground Green
     }
-    catch
+
+    if ($Error[0].Exception.ErrorRecord.FullyQualifiedErrorId.Contains("MaximumConcurrentMigrationLimitExceededException"))
+    {
+        Write-Error "Failed to create migration endpoint, please re-run the script with -MigrationEndpointMaxConcurrentMigrations option"
+    }
+    elseif (-not $MigrationEndpoint)
     {
         Write-Error "Failed to create migration endpoint, please contact crosstenantmigrationpreview@service.microsoft.com"
+    }
+    else
+    {
+        Write-Host "MigrationEndpoint created in $targetTenant for source $resourceTenantDomain" -Foreground Green
+        $MigrationEndpoint
     }
 }
 

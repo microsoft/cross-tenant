@@ -78,7 +78,16 @@ param
 
 
 [Parameter(Mandatory = $true, HelpMessage='App secret key vault url', ParameterSetName = 'VerifyTarget')]
-[ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) })]
+[ValidateScript({
+    if ($_ -cmatch "^https://[a-zA-Z_0-9]+\.vault\.azure.net(:443){0,1}/certificates/[a-zA-Z_0-9]+/[a-zA-Z_0-9]+$")
+    {
+        $true
+    }
+    else
+    {
+    throw [System.Management.Automation.ValidationMetadataException] "Please make sure key vault url matches format specified here: https://docs.microsoft.com/en-us/azure/key-vault/general/about-keys-secrets-certificates#vault-name-and-object-name"
+    }
+})]
 [string]$ApplicationKeyVaultUrl,
 
 [Parameter(Mandatory = $false, HelpMessage='SubscriptionId for key vault', ParameterSetName = 'VerifyTarget')]

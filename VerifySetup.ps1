@@ -83,7 +83,7 @@ param
     {
         $true
     }
-    elseif ($_ -cmatch "^https://[a-zA-Z_0-9]+\.vault\.azure.is(:443){0,1}/certificates/[a-zA-Z_0-9]+/[a-zA-Z_0-9]+$") {
+    elseif ($_ -cmatch "^https://[a-zA-Z_0-9]+\.vault\.azure.us(:443){0,1}/certificates/[a-zA-Z_0-9]+/[a-zA-Z_0-9]+$") {
         $true
     }
     else

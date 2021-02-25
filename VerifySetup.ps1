@@ -83,6 +83,9 @@ param
     {
         $true
     }
+    elseif ($_ -cmatch "^https://[a-zA-Z_0-9]+\.vault\.azure.is(:443){0,1}/certificates/[a-zA-Z_0-9]+/[a-zA-Z_0-9]+$") {
+        $true
+    }
     else
     {
     throw [System.Management.Automation.ValidationMetadataException] "Please make sure key vault url matches format specified here: https://docs.microsoft.com/en-us/azure/key-vault/general/about-keys-secrets-certificates#vault-name-and-object-name"

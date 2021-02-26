@@ -202,7 +202,7 @@ function Main() {
 
         $azureADAccount = Connect-AzureAD
         Write-Verbose "Connected to AzureAD - $($azureADAccount | Out-String)"
-        $azAccount = Connect-AzAccount
+        $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString()
         Write-Verbose "Connected to Az Account - $($azAccount | Out-String)"
 
         Write-Host "Setting up key vault in the $TargetTenantDomain tenant"

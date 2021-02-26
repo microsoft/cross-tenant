@@ -109,7 +109,7 @@ function Main() {
     $isTargetTenant = $PSCmdlet.ParameterSetName -eq 'VerifyTarget'
     $azureADAccount = Connect-AzureAD
     Write-Verbose "Connected to AzureAD - $($azureADAccount | Out-String)"
-    $azAccount = Connect-AzAccount
+    $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString()
     Write-Verbose "Connected to Az Account - $($azAccount | Out-String)"
     $currentTenantId = $azureADAccount.TenantId.Guid
     if($isTargetTenant -eq $true)

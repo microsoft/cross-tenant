@@ -79,7 +79,7 @@ param
 
 [Parameter(Mandatory = $true, HelpMessage='App secret key vault url', ParameterSetName = 'VerifyTarget')]
 [ValidateScript({
-    if ($_ -cmatch "^https://[a-zA-Z_0-9]+\.vault\.azure.net(:443){0,1}/certificates/[a-zA-Z_0-9]+/[a-zA-Z_0-9]+$")
+    if ($_ -cmatch "^https://[a-zA-Z_0-9\-]+\.vault\.azure.net(:443){0,1}/certificates/[a-zA-Z_0-9\-]+/[a-zA-Z_0-9]+$")
     {
         $true
     }

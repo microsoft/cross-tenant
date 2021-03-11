@@ -177,7 +177,11 @@ param
 
     [Parameter(HelpMessage='Existing Application Id. If existing application Id is present and can be found, new application will not be created.', ParameterSetName = 'TargetSetupAll')]
     [Parameter(HelpMessage='Existing Application Id. If existing application Id is present and can be found, new application will not be created.', ParameterSetName = 'TargetSetupAzure')]
-    [guid]$ExistingApplicationId  = [guid]::Empty
+    [guid]$ExistingApplicationId  = [guid]::Empty,
+
+    [Parameter(Mandatory=$false, HelpMessage='Use this switch if you are connecting to a tenant in the US Government Cloud')]
+    [Switch]
+    $Government
 )
 
 $ErrorActionPreference = 'Stop'
@@ -523,16 +527,29 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
 
     Write-Host "Application $appName created successfully in $targetTenantDomain tenant with following permissions. $permissions" -Foreground Green
     Write-Host "Admin consent URI for $targetTenantDomain tenant admin is -" -Foreground Yellow
-    Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
+    if ($Government == $true) {
+        Write-Host ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
+    } else {
+        Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
+    }
 
     Write-Host "Admin consent URI for $resourceTenantDomain tenant admin is -" -Foreground Yellow
-    Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
+    if ($Government == $true) {
+        Write-Host ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
+    } else {
+        Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
+    }
 
     return $appOwnerTenantId, $appCreated
 }
 
 function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$resourceUri, $appSecretCert) {
-    $authority = "https://login.microsoftonline.com/$authContextTenant/oauth2/token"
+    if ($Government == $true) {
+        $authority = "https://login.microsoftonline.us/$authContextTenant/oauth2/token"
+    } else {
+        $authority = "https://login.microsoftonline.com/$authContextTenant/oauth2/token"
+    }
+
     $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList $authority
     $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($appSecretCert.SecretValue)
     
@@ -549,7 +566,12 @@ function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$r
 }
 
 function Get-AccessTokenWithUserPrompt([string]$authContextTenant, [string]$resourceUri) {
-    $authority = "https://login.microsoftonline.com/common/oauth2/token"
+    if ($Government == $true) {
+        $authority = "https://login.microsoftonline.us/common/oauth2/token"
+    } else {
+        $authority = "https://login.microsoftonline.com/common/oauth2/token"
+    }
+
     $authContext = New-Object "Microsoft.IdentityModel.Clients.ActiveDirectory.AuthenticationContext" -ArgumentList $authority
     Write-Verbose "Acquiring token resourceAppIdURI $resourceUri"
     $platformParams = New-Object Microsoft.IdentityModel.Clients.ActiveDirectory.PlatformParameters -ArgumentList ([Microsoft.IdentityModel.Clients.ActiveDirectory.PromptBehavior]::Always)
@@ -558,7 +580,11 @@ function Get-AccessTokenWithUserPrompt([string]$authContextTenant, [string]$reso
 
 function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDomain, [string]$resourceTenantDomainAdminEmail, [string]$appId, $appSecretCert, [string]$appReplyUrl, [string]$appName) {
     $authRes = $null
-    $msGraphResourceUri = "https://graph.microsoft.com"
+    if ($Government == $true) {
+        $msGraphResourceUri = "https://graph.microsoft.us"
+    } else {
+        $msGraphResourceUri = "https://graph.microsoft.com"
+    }
     Write-Verbose "Preparing invitation. Waiting for 10 secs before requesting token for the consented application to give time for replication."
     sleep 10
     if ($appSecretCert) {
@@ -571,17 +597,31 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
         Write-Error "Could not retrieve a token for invitation manager api call"
     }
 
-    $invitationBody = @{
-        invitedUserEmailAddress = $resourceTenantDomainAdminEmail
-        inviteRedirectUrl = ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appId, $appReplyUrl)
-        sendInvitationMessage = $true
-        invitedUserMessageInfo = @{
-            customizedMessageBody = "Organization [$invitingTenant] wishes to pull mailboxes from your organization using [$appName] application. `
-            If you recognize this application please click below to provide your consent. `
-            To authorize this application to be used for office 365 mailbox migration, please add its application id [$appId] to your organization relationship with [$invitingTenant] in the OAuthApplicationId property.`
-            If the 'Accept Invitation' button does not properly work, the URL will state application [$appName] cannot be accessed at this time after clicking on the button.`
-            Please copy the link in the email and paste it directly into the browser."
+    if ($Government == $true) {
+        $invitationBody = @{
+            invitedUserEmailAddress = $resourceTenantDomainAdminEmail
+            inviteRedirectUrl = ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appId, $appReplyUrl)
+            sendInvitationMessage = $true
+            invitedUserMessageInfo = @{
+                customizedMessageBody = "Organization [$invitingTenant] wishes to pull mailboxes from your organization using [$appName] application. `
+                If you recognize this application please click below to provide your consent. `
+                To authorize this application to be used for office 365 mailbox migration, please add its application id [$appId] to your organization relationship with [$invitingTenant] in the OAuthApplicationId property.`
+                If the 'Accept Invitation' button does not properly work, the URL will state application [$appName] cannot be accessed at this time after clicking on the button.`
+                Please copy the link in the email and paste it directly into the browser."
+            }
         }
+    } else {
+        $invitationBody = @{
+            invitedUserEmailAddress = $resourceTenantDomainAdminEmail
+            inviteRedirectUrl = ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appId, $appReplyUrl)
+            sendInvitationMessage = $true
+            invitedUserMessageInfo = @{
+                customizedMessageBody = "Organization [$invitingTenant] wishes to pull mailboxes from your organization using [$appName] application. `
+                If you recognize this application please click below to provide your consent. `
+                To authorize this application to be used for office 365 mailbox migration, please add its application id [$appId] to your organization relationship with [$invitingTenant] in the OAuthApplicationId property.`
+                If the 'Accept Invitation' button does not properly work, the URL will state application [$appName] cannot be accessed at this time after clicking on the button.`
+                Please copy the link in the email and paste it directly into the browser."
+            }
     }
 
     $invitationBodyJson = $invitationBody | ConvertTo-Json
@@ -589,7 +629,11 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
     $headers.Add("Authorization", $authRes.CreateAuthorizationHeader())
     Write-Verbose "Sending invitation"
 
-    $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
+    if ($Government == $true) {
+        $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.us/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
+    } else {
+        $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
+    }
 
     if ($resp -and $resp.invitedUserEmailAddress) {
         Write-Host "Successfully sent invitation to $($resp.invitedUserEmailAddress)" -Foreground Green

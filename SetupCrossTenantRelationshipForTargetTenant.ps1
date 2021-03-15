@@ -638,6 +638,7 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
     if ($resp -and $resp.invitedUserEmailAddress) {
         Write-Host "Successfully sent invitation to $($resp.invitedUserEmailAddress)" -Foreground Green
     }
+            }
 }
 
 function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resourceTenantDomain, [string]$resourceTenantId, [string]$appId, [string]$appSecretKeyVaultUrl, [int]$migEndpointMaxConcurrentMigrations) {

@@ -527,14 +527,14 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
 
     Write-Host "Application $appName created successfully in $targetTenantDomain tenant with following permissions. $permissions" -Foreground Green
     Write-Host "Admin consent URI for $targetTenantDomain tenant admin is -" -Foreground Yellow
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         Write-Host ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
     } else {
         Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
     }
 
     Write-Host "Admin consent URI for $resourceTenantDomain tenant admin is -" -Foreground Yellow
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         Write-Host ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
     } else {
         Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
@@ -544,7 +544,7 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
 }
 
 function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$resourceUri, $appSecretCert) {
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         $authority = "https://login.microsoftonline.us/$authContextTenant/oauth2/token"
     } else {
         $authority = "https://login.microsoftonline.com/$authContextTenant/oauth2/token"
@@ -566,7 +566,7 @@ function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$r
 }
 
 function Get-AccessTokenWithUserPrompt([string]$authContextTenant, [string]$resourceUri) {
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         $authority = "https://login.microsoftonline.us/common/oauth2/token"
     } else {
         $authority = "https://login.microsoftonline.com/common/oauth2/token"
@@ -580,7 +580,7 @@ function Get-AccessTokenWithUserPrompt([string]$authContextTenant, [string]$reso
 
 function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDomain, [string]$resourceTenantDomainAdminEmail, [string]$appId, $appSecretCert, [string]$appReplyUrl, [string]$appName) {
     $authRes = $null
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         $msGraphResourceUri = "https://graph.microsoft.us"
     } else {
         $msGraphResourceUri = "https://graph.microsoft.com"
@@ -597,7 +597,7 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
         Write-Error "Could not retrieve a token for invitation manager api call"
     }
 
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         $invitationBody = @{
             invitedUserEmailAddress = $resourceTenantDomainAdminEmail
             inviteRedirectUrl = ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appId, $appReplyUrl)
@@ -629,7 +629,7 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
     $headers.Add("Authorization", $authRes.CreateAuthorizationHeader())
     Write-Verbose "Sending invitation"
 
-    if ($Government == $true) {
+    if ($Government -eq $true) {
         $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.us/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
     } else {
         $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers

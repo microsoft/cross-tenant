@@ -685,7 +685,28 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
 
     Write-Verbose "Creating migration endpoint $orgRelName with remote tenant: $resourceTenantDomain, appId: $appId, appSecret: $appSecretKeyVaultUrl"
 
-    if (-not $MigrationEndpointMaxConcurrentMigrations)
+    if (-not $MigrationEndpointMaxConcurrentMigrations -and $Government -eq $true)
+    {
+        $global:MigrationEndpoint = New-MigrationEndpoint `
+                                        -Name $orgRelName `
+                                        -RemoteTenant $resourceTenantDomain `
+                                        -RemoteServer "outlook.office.us" `
+                                        -ApplicationId $appId `
+                                        -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -ExchangeRemoteMove:$true
+    }
+    elseif ($Government -eq $true)
+    {
+        $global:MigrationEndpoint = New-MigrationEndpoint `
+                                        -Name $orgRelName `
+                                        -RemoteTenant $resourceTenantDomain `
+                                        -RemoteServer "outlook.office.us" `
+                                        -ApplicationId $appId `
+                                        -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
+                                        -ExchangeRemoteMove:$true
+    }
+    elseif (-not $MigrationEndpointMaxConcurrentMigrations)
     {
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `

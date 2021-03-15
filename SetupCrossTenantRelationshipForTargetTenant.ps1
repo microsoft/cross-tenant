@@ -695,7 +695,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -ExchangeRemoteMove:$true
     }
-    else
+    elseif ($Government -eq $true)
     {
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `

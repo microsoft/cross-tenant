@@ -803,6 +803,7 @@ function Verification {
         Exit
     }
     Write-Host "`nVerifying that your script is up to date with the latest changes."
+    Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1 and creation of temporary folder."
     if ((Test-Path -Path .\XTenantTemp) -eq $true) {
         Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
     }
@@ -815,9 +816,7 @@ function Verification {
     }
     elseif ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are not using the latest version of the script."`n
-        Write-Host "We are replacing the local version with the most current version available on GitHub."`n
         Start-Sleep 1
-        Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1"
         Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForTargetTenant.ps1 and cleaning up temporary files..."
         Start-Sleep 1
         Copy-Item .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null

@@ -187,6 +187,7 @@ param
 $ErrorActionPreference = 'Stop'
 
 $ScriptPath = $MyInvocation.MyCommand.Path
+$ScriptDir = Split-Path $ScriptPath
 $MS_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000"
 $MS_GRAPH_APP_ROLE = "User.Invite.All"
 $EXO_APP_ID = "00000002-0000-0ff1-ce00-000000000000"
@@ -805,25 +806,25 @@ function Verification {
     }
     Write-Host "`nVerifying that your script is up to date with the latest changes."
     Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1 and creation of temporary files."
-    if ((Test-Path -Path $ScriptPath\XTenantTemp) -eq $true) {
-        Remove-Item -Path $ScriptPath\XTenantTemp\ -Recurse -Force | Out-Null
+    if ((Test-Path -Path $ScriptDir\XTenantTemp) -eq $true) {
+        Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
     }
     New-Item -Path . -Name XTenantTemp -ItemType Directory | Out-Null
-    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
-    if ((Get-FileHash $ScriptPath\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
+    if ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1
-        Remove-Item -Path $ScriptPath\XTenantTemp\ -Recurse -Force | Out-Null
+        Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
         Main
     }
-    elseif ((Get-FileHash $ScriptPath\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+    elseif ((Get-FileHash $ScriptDir).hash -ne (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are not using the latest version of the script."`n
         Start-Sleep 1
         Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForTargetTenant.ps1 and cleaning up temporary files..."
         Start-Sleep 1
-        Copy-Item $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
+        Copy-Item $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
         Start-Sleep 1
-        Remove-Item -Path $ScriptPath\XTenantTemp\ -Recurse -Force | Out-Null
+        Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
         Write-Host "Update completed. You will need to run the script again."
         Start-Sleep 1
         Exit

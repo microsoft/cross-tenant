@@ -817,7 +817,7 @@ function Verification {
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
         Main
     }
-    elseif ((Get-FileHash $ScriptDir).hash -ne (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+    elseif ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are not using the latest version of the script."`n
         Start-Sleep 1
         Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForTargetTenant.ps1 and cleaning up temporary files..."

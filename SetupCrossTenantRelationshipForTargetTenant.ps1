@@ -803,15 +803,16 @@ function Verification {
         Exit
     }
     Write-Host "`nVerifying that your script is up to date with the latest changes."
-    Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1 and creation of temporary folder."
+    Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1 and creation of temporary files."
     if ((Test-Path -Path .\XTenantTemp) -eq $true) {
         Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
     }
     New-Item -Path . -Name XTenantTemp -ItemType Directory | Out-Null
     Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
     if ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
-        Write-Host "`nYou are using the latest version of the script. Proceeding with setup."
+        Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1
+        Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
         Main
     }
     elseif ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {

@@ -815,7 +815,6 @@ function Verification {
         Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
-        Main
     }
     elseif ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are not using the latest version of the script."`n
@@ -831,6 +830,7 @@ function Verification {
     }
 }
 PreValidation
+Main
 
 <#
 set-OrganizationRelationship -Identity <tenant>\<id> -OAuthApplicationId 484a8384-979a-4cc9-8791-8e6bb34f76d4

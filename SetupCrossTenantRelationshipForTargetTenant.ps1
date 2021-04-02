@@ -793,7 +793,8 @@ function PreValidation() {
 }
 
 function Verification {
-    Write-Host "`nBeginning verification steps."
+    Write-Host "`nBeginning verification steps."`n
+    Write-Host "Verifying ability to create a new organization relationship in the tenant."
     try {
         New-OrganizationRelationship -DomainNames contoso.onmicrosoft.com -Name Contoso -WhatIf -ErrorAction Stop
     }
@@ -801,6 +802,7 @@ function Verification {
         Write-Output "You need to run the command Enable-OrganizationCustomization before continuing with execution of the script."
         Exit
     }
+    Write-Host "`nVerifying that your script is up to date with the latest changes."
     if ((Test-Path -Path .\XTenantTemp) -eq $true) {
         Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
     }

@@ -822,7 +822,7 @@ function Verification {
         Start-Sleep 1
         Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForTargetTenant.ps1 and cleaning up temporary files..."
         Start-Sleep 1
-        Copy-Item $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
+        Copy-Item $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination $ScriptDir | Out-Null
         Start-Sleep 1
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
         Write-Host "Update completed. You will need to run the script again."

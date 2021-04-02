@@ -783,7 +783,7 @@ function PreValidation() {
     Write-Host "This requires that we download the latest version of the script from GitHub to compare with your local copy."
     Write-Host "This file will be stored on your local computer temporarily, as well as overwrite your existing script file if it is out of date."
     $title = "Confirm: Allow for download from GitHub."
-    $message = "`nIf you are ready to begin this step, select 'Y'. `nIf you would prefer to manually download the scripts to make sure you have the latest version or change your path, select 'N'"
+    $message = "`nIf you are ready to begin this step, select 'Y'. `nIf you would prefer to manually download the scripts to make sure you have the latest version, select 'N'"
     $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
     $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"
     $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)

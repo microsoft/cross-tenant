@@ -110,7 +110,7 @@ function Run-ExchangeSetupForResourceTenant([string]$targetTenant, [string]$targ
     }
 }
 
-function UserPrompt() {
+function PreValidation() {
     Write-Host `n
     Write-Host "Welcome to the Cross-tenant mailbox migration preview! Before running this script, please be sure to review the details provided on docs.microsoft.com at the following URL: `nhttps://docs.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-mailbox-migration"
     Write-Host "`nIt is also recommended before running this script to review the script in a script editor or Notepad prior to running."`n
@@ -123,7 +123,57 @@ function UserPrompt() {
     $choice=$host.ui.PromptForChoice($title, $message, $options, 1)
     if ($choice -ne 0) {
         Exit}
-    else {Main}
+    Start-Sleep 2
+    Write-Host "`nWe are verifying that you are using the latest version of the script."`n
+    Write-Host "This requires that we download the latest version of the script from GitHub to compare with your local copy."
+    Write-Host "This file will be stored on your local computer temporarily, as well as overwrite your existing script file if it is out of date."
+    $title = "Confirm: Allow for download from GitHub."
+    $message = "`nIf you are ready to begin this step, select 'Y'. `nIf you would prefer to manually download the scripts to make sure you have the latest version, select 'N'"
+    $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
+    $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"
+    $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+    $choice=$host.ui.PromptForChoice($title, $message, $options, 1)
+    if ($choice -ne 0) {
+        Exit}
+    else {Verification}
+
 }
 
-UserPrompt
+function Verification {
+    Write-Host "`nBeginning verification steps."`n
+    Write-Host "Verifying ability to create a new organization relationship in the tenant."
+    try {
+        New-OrganizationRelationship -DomainNames contoso.onmicrosoft.com -Name Contoso -WhatIf -ErrorAction Stop
+    }
+    catch {
+        Write-Output "You need to run the command Enable-OrganizationCustomization before continuing with execution of the script."
+        Exit
+    }
+    Write-Host "`nVerifying that your script is up to date with the latest changes."
+    Write-Host "`nBeginning download of SetupCrossTenantRelationshipForResourceTenant.ps1 and creation of temporary files."
+    if ((Test-Path -Path $ScriptDir\XTenantTemp) -eq $true) {
+        Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
+    }
+    New-Item -Path . -Name XTenantTemp -ItemType Directory | Out-Null
+    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForResourceTenant.ps1 -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1
+    if ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForResourceTenant.ps1).hash -eq (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1).hash) {
+        Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
+        Start-Sleep 1
+        Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
+    }
+    elseif ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForResourceTenant.ps1).hash -ne (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1).hash) {
+        Write-Host "`nYou are not using the latest version of the script."`n
+        Start-Sleep 1
+        Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForResourceTenant.ps1 and cleaning up temporary files..."
+        Start-Sleep 1
+        Copy-Item $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1 -Destination $ScriptDir | Out-Null
+        Start-Sleep 1
+        Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
+        Write-Host "Update completed. You will need to run the script again."
+        Start-Sleep 1
+        Exit
+    }
+}
+
+PreValidation
+Main

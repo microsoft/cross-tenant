@@ -763,7 +763,7 @@ if (-not $enumExists) {
 "@
 }
 
-function UserPrompt() {
+function PreValidation() {
     Write-Host `n
     Write-Host "Welcome to the Cross-tenant mailbox migration preview! Before running this script, please be sure to review the details provided on docs.microsoft.com at the following URL: `nhttps://docs.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-mailbox-migration"
     Write-Host "`nIt is also recommended before running this script to review the script in a script editor or Notepad prior to running."`n
@@ -776,10 +776,57 @@ function UserPrompt() {
     $choice=$host.ui.PromptForChoice($title, $message, $options, 1)
     if ($choice -ne 0) {
         Exit}
-    else {Main}
+    Start-Sleep 2
+    Write-Host "`nWe are verifying that you are using the latest version of the script."`n
+    Write-Host "This requires that we download the latest version of the script from GitHub to compare with your local copy."
+    Write-Host "This file will be stored on your local computer temporarily, as well as overwrite your existing script file if it is out of date."
+    $title = "Confirm: Allow for download from GitHub and that you are running the script from the local directory the script exists in."
+    $message = "`nIf you are ready to begin this step, select 'Y'. `nIf you would prefer to manually download the scripts to make sure you have the latest version or change your path, select 'N'"
+    $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
+    $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"
+    $options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+    $choice=$host.ui.PromptForChoice($title, $message, $options, 1)
+    if ($choice -ne 0) {
+        Exit}
+    else {Verification}
+
 }
 
-UserPrompt
+function Verification {
+    Write-Host "`nBeginning verification steps."
+    try {
+        New-OrganizationRelationship -DomainNames contoso.onmicrosoft.com -Name Contoso -WhatIf -ErrorAction Stop
+    }
+    catch {
+        Write-Output "You need to run the command Enable-OrganizationCustomization before continuing with execution of the script."
+        Exit
+    }
+    if ((Test-Path -Path .\XTenantTemp) -eq $true) {
+        Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
+    }
+    New-Item -Path . -Name XTenantTemp -ItemType Directory | Out-Null
+    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
+    if ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+        Write-Host "`nYou are using the latest version of the script. Proceeding with setup."
+        Start-Sleep 1
+        Main
+    }
+    elseif ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+        Write-Host "`nYou are not using the latest version of the script."`n
+        Write-Host "We are replacing the local version with the most current version available on GitHub."`n
+        Start-Sleep 1
+        Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1"
+        Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForTargetTenant.ps1 and cleaning up temporary files..."
+        Start-Sleep 1
+        Copy-Item .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
+        Start-Sleep 1
+        Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
+        Write-Host "Proceeding with setup."
+        Start-Sleep 1
+        Main
+    }
+}
+PreValidation
 
 <#
 set-OrganizationRelationship -Identity <tenant>\<id> -OAuthApplicationId 484a8384-979a-4cc9-8791-8e6bb34f76d4

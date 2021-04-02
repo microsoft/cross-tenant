@@ -65,6 +65,8 @@ param
 
 $ErrorActionPreference = 'Stop'
 
+$ScriptPath = $MyInvocation.MyCommand.Path
+$ScriptDir = Split-Path $ScriptPath
 
 function Main() {
     Check-ExchangeOnlinePowershellConnection

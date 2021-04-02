@@ -186,6 +186,7 @@ param
 
 $ErrorActionPreference = 'Stop'
 
+$ScriptPath = $MyInvocation.MyCommand.Path
 $MS_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000"
 $MS_GRAPH_APP_ROLE = "User.Invite.All"
 $EXO_APP_ID = "00000002-0000-0ff1-ce00-000000000000"
@@ -780,7 +781,7 @@ function PreValidation() {
     Write-Host "`nWe are verifying that you are using the latest version of the script."`n
     Write-Host "This requires that we download the latest version of the script from GitHub to compare with your local copy."
     Write-Host "This file will be stored on your local computer temporarily, as well as overwrite your existing script file if it is out of date."
-    $title = "Confirm: Allow for download from GitHub and that you are running the script from the local directory the script exists in."
+    $title = "Confirm: Allow for download from GitHub."
     $message = "`nIf you are ready to begin this step, select 'Y'. `nIf you would prefer to manually download the scripts to make sure you have the latest version or change your path, select 'N'"
     $yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", "Yes"
     $no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", "No"
@@ -804,25 +805,25 @@ function Verification {
     }
     Write-Host "`nVerifying that your script is up to date with the latest changes."
     Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1 and creation of temporary files."
-    if ((Test-Path -Path .\XTenantTemp) -eq $true) {
-        Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
+    if ((Test-Path -Path $ScriptPath\XTenantTemp) -eq $true) {
+        Remove-Item -Path $ScriptPath\XTenantTemp\ -Recurse -Force | Out-Null
     }
     New-Item -Path . -Name XTenantTemp -ItemType Directory | Out-Null
-    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
-    if ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
+    if ((Get-FileHash $ScriptPath\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1
-        Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
+        Remove-Item -Path $ScriptPath\XTenantTemp\ -Recurse -Force | Out-Null
         Main
     }
-    elseif ((Get-FileHash .\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
+    elseif ((Get-FileHash $ScriptPath\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -ne (Get-FileHash $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are not using the latest version of the script."`n
         Start-Sleep 1
         Write-Host "`nReplacing the local copy of SetupCrossTenantRelationshipForTargetTenant.ps1 and cleaning up temporary files..."
         Start-Sleep 1
-        Copy-Item .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
+        Copy-Item $ScriptPath\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
         Start-Sleep 1
-        Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
+        Remove-Item -Path $ScriptPath\XTenantTemp\ -Recurse -Force | Out-Null
         Write-Host "Update completed. You will need to run the script again."
         Start-Sleep 1
         Exit

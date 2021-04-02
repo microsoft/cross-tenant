@@ -823,9 +823,9 @@ function Verification {
         Copy-Item .\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1 -Destination . | Out-Null
         Start-Sleep 1
         Remove-Item -Path .\XTenantTemp\ -Recurse -Force | Out-Null
-        Write-Host "Proceeding with setup."
+        Write-Host "Update completed. You will need to run the script again."
         Start-Sleep 1
-        Main
+        Exit
     }
 }
 PreValidation

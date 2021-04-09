@@ -324,7 +324,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
                                                [string]$certName, `
                                                [string]$certSubj, `
                                                [string]$exoAppObjectId, `
-                                               [string]$retrieveCertPrivateKey, `
+                                               [bool]$retrieveCertPrivateKey, `
                                                [string]$auditStorageAcntRG, `
                                                [string]$auditStorageAcntName, `
                                                [string]$auditStorageAcntLocation, `

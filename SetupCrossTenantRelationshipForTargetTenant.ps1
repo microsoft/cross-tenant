@@ -324,7 +324,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
                                                [string]$certName, `
                                                [string]$certSubj, `
                                                [string]$exoAppObjectId, `
-                                               $retrieveCertPrivateKey, `
+                                               [string]$retrieveCertPrivateKey, `
                                                [string]$auditStorageAcntRG, `
                                                [string]$auditStorageAcntName, `
                                                [string]$auditStorageAcntLocation, `
@@ -810,7 +810,7 @@ function Verification {
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
     }
     New-Item -Path $ScriptDir -Name XTenantTemp -ItemType Directory | Out-Null
-    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForTargetTenant.ps1 -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
+    Invoke-WebRequest -Uri https://aka.ms/TargetTenant -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
     if ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1

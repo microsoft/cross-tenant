@@ -157,7 +157,7 @@ function Verification {
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
     }
     New-Item -Path $ScriptDir -Name XTenantTemp -ItemType Directory | Out-Null
-    Invoke-WebRequest -Uri https://github.com/microsoft/cross-tenant/releases/download/Preview/SetupCrossTenantRelationshipForResourceTenant.ps1 -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1
+    Invoke-WebRequest -Uri https://aka.ms/ResourceTenant -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1
     if ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForResourceTenant.ps1).hash -eq (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForResourceTenant.ps1).hash) {
         Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1

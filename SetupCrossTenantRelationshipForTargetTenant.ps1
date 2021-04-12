@@ -43,8 +43,8 @@
    .PARAMETER KeyVaultName
    KeyVaultName - the key vault name.
 
-   .PARAMETER KeyVaultLocation
-   KeyVaultLocation - the location of the key vault
+   .PARAMETER AzureResourceLocation
+   AzureResourceLocation - the location of the Azure Resource Group & Key Vault
 
    .PARAMETER KeyVaultAuditStorageResourceGroup
    KeyVaultAuditStorageResourceGroup - the key vault audit storage resource group
@@ -83,7 +83,7 @@
    ResourceTenantId - The resource tenant id.
 
    .EXAMPLE
-   SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt" -KeyVaultAuditStorageResourceGroup TestResGrp0 -KeyVaultAuditStorageAccountName testauditname0 -KeyVaultAuditStorageAccountLocation westus -KeyVaultAuditStorageAccountSKU Standard_GRS -MigrationEndpointMaxConcurrentMigrations 20 -ExistingApplicationId d7404497-1e2f-4b58-bdd5-93e82dad91a4
+   SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt" -KeyVaultAuditStorageResourceGroup TestResGrp0 -KeyVaultAuditStorageAccountName testauditname0 -KeyVaultAuditStorageAccountLocation westus -KeyVaultAuditStorageAccountSKU Standard_GRS -MigrationEndpointMaxConcurrentMigrations 20 -ExistingApplicationId d7404497-1e2f-4b58-bdd5-93e82dad91a4 -AzureResourceLocation "West US"
 
    .EXAMPLE
    SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantId <ContosoTenantId>
@@ -112,9 +112,9 @@ param
     [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) })]
     [string]$KeyVaultName,
 
-    [Parameter(HelpMessage='KeyVault location', ParameterSetName = 'TargetSetupAll')]
-    [Parameter(HelpMessage='KeyVault location', ParameterSetName = 'TargetSetupAzure')]
-    [string]$KeyVaultLocation = "West US",
+    [Parameter(Mandatory = $true, HelpMessage='Azure resource location', ParameterSetName = 'TargetSetupAll')]
+    [Parameter(Mandatory = $true, HelpMessage='Azure resource location', ParameterSetName = 'TargetSetupAzure')]
+    [string]$AzureResourceLocation,
 
     [Parameter(Mandatory = $false, HelpMessage='Resource group for storage account used for key vault audit logs', ParameterSetName = 'TargetSetupAll')]
     [Parameter(Mandatory = $false, HelpMessage='Resource group for storage account used for key vault audit logs', ParameterSetName = 'TargetSetupAzure')]
@@ -234,7 +234,7 @@ function Main() {
                                                             $ResourceTenantDomain `
                                                             $ResourceGroup `
                                                             $KeyVaultName `
-                                                            $KeyVaultLocation `
+                                                            $AzureResourceLocation `
                                                             $CertificateName `
                                                             $CertificateSubject `
                                                             $exoAppSpn.ObjectId `
@@ -319,7 +319,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
                                                [string]$resourceTenantDomain, `
                                                [string]$resourceGrpName, `
                                                [string]$kvName, `
-                                               [string]$kvLocation, `
+                                               [string]$arLocation, `
                                                [string]$certName, `
                                                [string]$certSubj, `
                                                [string]$exoAppObjectId, `
@@ -346,7 +346,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
 
     if (-not $resGrp) {
         Write-Verbose "Creating resource group - $resourceGrpName"
-        $resGrp = New-AzResourceGroup -Name $resourceGrpName -Location $kvLocation
+        $resGrp = New-AzResourceGroup -Name $resourceGrpName -Location $arLocation
         Write-Host "Resource Group $resourceGrpName successfully created" -Foreground Green
     }
 
@@ -361,7 +361,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
         Write-Verbose "Keyvault $kvName already exists."
     } else {
         Write-Verbose "Creating KeyVault $kvName"
-        $kv = New-AzKeyVault -Name $kvName -Location $kvLocation -ResourceGroupName $resourceGrpName
+        $kv = New-AzKeyVault -Name $kvName -Location $arLocation -ResourceGroupName $resourceGrpName
         Write-Host "KeyVault $kvName successfully created" -Foreground Green
     }
 
@@ -808,6 +808,11 @@ function Verification {
     Write-Host "`nBeginning download of SetupCrossTenantRelationshipForTargetTenant.ps1 and creation of temporary files."
     if ((Test-Path -Path $ScriptDir\XTenantTemp) -eq $true) {
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
+    }
+    Write-Host "`nVerifying that a valid location was specified for Azure`n"
+    if ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation})) {
+        Write-Host "A valid Azure location was not specified, please run Get-AzLocation to determine a valid location."
+        Exit
     }
     New-Item -Path $ScriptDir -Name XTenantTemp -ItemType Directory | Out-Null
     Invoke-WebRequest -Uri https://aka.ms/TargetTenant -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1

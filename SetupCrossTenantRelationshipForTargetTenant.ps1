@@ -197,7 +197,6 @@ $FIRSTPARTY_POWERSHELL_CLIENTID = "a0c73c16-a7e3-4564-9a95-2bdf47383716"
 $FIRSTPARTY_POWERSHELL_CLIENT_REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob' -as [Uri]
 
 function Main() {
-    Check-ExchangeOnlinePowershellConnection
 
     $AzureAppPermissions = ([ApplicationPermissions]$AzureAppPermissions)
     if ($PSCmdlet.ParameterSetName -eq 'TargetSetupAll' -or $PSCmdlet.ParameterSetName -eq 'TargetSetupAzure') {
@@ -796,6 +795,7 @@ function PreValidation() {
 
 function Verification {
     Write-Host "`nBeginning verification steps."`n
+    Check-ExchangeOnlinePowershellConnection
     Write-Host "Verifying ability to create a new organization relationship in the tenant."
     try {
         New-OrganizationRelationship -DomainNames contoso.onmicrosoft.com -Name Contoso -WhatIf -ErrorAction Stop

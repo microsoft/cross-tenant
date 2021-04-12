@@ -69,7 +69,6 @@ $ScriptPath = $MyInvocation.MyCommand.Path
 $ScriptDir = Split-Path $ScriptPath
 
 function Main() {
-    Check-ExchangeOnlinePowershellConnection
     Run-ExchangeSetupForResourceTenant $TargetTenantDomain $TargetTenantId $ResourceTenantDomain $ApplicationId $SourceMailboxMovePublishedScopes
     Write-Host "Exchange setup complete." -Foreground Green
 }
@@ -143,6 +142,7 @@ function PreValidation() {
 
 function Verification {
     Write-Host "`nBeginning verification steps."`n
+    Check-ExchangeOnlinePowershellConnection
     Write-Host "Verifying ability to create a new organization relationship in the tenant."
     try {
         New-OrganizationRelationship -DomainNames contoso.onmicrosoft.com -Name Contoso -WhatIf -ErrorAction Stop

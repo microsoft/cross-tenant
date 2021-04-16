@@ -694,7 +694,8 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -RemoteServer "outlook.office.us" `
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
-                                        -ExchangeRemoteMove:$true
+                                        -ExchangeRemoteMove:$true `
+                                        -SkipVerification
     }
     elseif ($Government -eq $true)
     {
@@ -705,7 +706,8 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
-                                        -ExchangeRemoteMove:$true
+                                        -ExchangeRemoteMove:$true `
+                                        -SkipVerification
     }
     elseif (-not $MigrationEndpointMaxConcurrentMigrations)
     {
@@ -715,7 +717,8 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -RemoteServer "outlook.office.com" `
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
-                                        -ExchangeRemoteMove:$true
+                                        -ExchangeRemoteMove:$true `
+                                        -SkipVerification
     }
     else
     {
@@ -726,7 +729,8 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
-                                        -ExchangeRemoteMove:$true
+                                        -ExchangeRemoteMove:$true `
+                                        -SkipVerification
     }
 
     if ($Error[0].Exception.ErrorRecord.FullyQualifiedErrorId.Contains("MaximumConcurrentMigrationLimitExceededException"))

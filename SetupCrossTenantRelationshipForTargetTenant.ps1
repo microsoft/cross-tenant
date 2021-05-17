@@ -44,7 +44,7 @@
    KeyVaultName - the key vault name.
 
    .PARAMETER AzureResourceLocation
-   AzureResourceLocation - the location of the Azure Resource Group & Key Vault
+   AzureResourceLocation - the Display Name of the Azure Resource Group & Key Vault location
 
    .PARAMETER KeyVaultAuditStorageResourceGroup
    KeyVaultAuditStorageResourceGroup - the key vault audit storage resource group

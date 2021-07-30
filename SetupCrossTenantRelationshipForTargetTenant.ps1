@@ -772,7 +772,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -ExchangeRemoteMove:$true
     }
 
-    if ($Error[0] -eq $false -and $Error[0].Exception.ErrorRecord.FullyQualifiedErrorId.Contains("MaximumConcurrentMigrationLimitExceededException"))
+    if ($Null -ne $Error[0] -and $Error[0].Exception.ErrorRecord.FullyQualifiedErrorId.Contains("MaximumConcurrentMigrationLimitExceededException"))
     {
         Write-Error "Failed to create migration endpoint, please adjust MaxConcurrentMigrations for existing migration endpoints then re-run setup script with -MigrationEndpointMaxConcurrentMigrations option"
     }

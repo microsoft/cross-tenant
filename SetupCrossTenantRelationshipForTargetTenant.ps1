@@ -215,13 +215,13 @@ function Main() {
             Write-Error "Cannot use application for sending invitation as it does not have permissions on MSGraph"
         }
 
-        if ($Government -eq $true) {
+        if ($Government -eq $true -or $Dod -eq $true) {
             $azureADAccount = Connect-AzureAD -AzureEnvironmentName AzureUSGovernment
         } else {
             $azureAdAccount = Connect-AzureAD
         }
         Write-Verbose "Connected to AzureAD - $($azureADAccount | Out-String)"
-        if ($Government -eq $true) {
+        if ($Government -eq $true -or $Dod -eq $true) {
             $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString() -Environment AzureUSGovernment
         } else {
             $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString()
@@ -293,7 +293,7 @@ function Check-ExchangeOnlinePowershellConnection {
 }
 
 function Check-AzurePowershellConnection {
-    if ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation}) -and $Government -eq $true) {
+    if ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation}) -and $Government -eq $true -or (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation}) -and $Dod) {
         Connect-AzAccount -Environment AzureUSGovernment
     } elseif ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation})) {
         Connect-AzAccount

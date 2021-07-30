@@ -884,7 +884,7 @@ New-MoveRequest <id> -Remote -RemoteTenant <remoteOrg> -TargetDeliveryDomain <ta
 #>
 <#
 function Verify-ApplicationLocalTenant ([bool]$localTenant, [string]$appId, [string]$targetTenant, [string]$appReplyUrl, [string]$friendTenant) {
-    if ($localTenant -eq $false -and $Government -eq $true) {
+    if ($localTenant -eq $false -and $Government -eq $true -or $localTenant -eq $false -and $Dod -eq $true) {
         Write-Host "Log into $friendTenant"
         Connect-AzureAD -AzureEnvironmentName AzureUSGovernment
     } else {

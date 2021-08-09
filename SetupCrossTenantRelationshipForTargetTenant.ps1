@@ -189,7 +189,7 @@ param
     [Switch]
     $Government,
     
-    [Parameter(Mandatory=$false, HelpMessage='Use this switch if you are connecting to a tenant in the US Government Cloud DOD. Use this in conjuction with -Government')]
+    [Parameter(Mandatory=$false, HelpMessage='Use this switch if you are connecting to a tenant in the US Government Cloud - Dod')]
     [Switch]
     $Dod
 )

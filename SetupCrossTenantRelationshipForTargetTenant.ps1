@@ -81,6 +81,12 @@
 
    .PARAMETER ResourceTenantId
    ResourceTenantId - The resource tenant id.
+   
+   .PARAMETER Government
+   Government - Use if the tenants are in the Microsoft Cloud for US Government.
+   
+   .PARAMETER DoD
+   Dod - Use if the tenants are DoD customers in the Microsoft Cloud for US Government.
 
    .EXAMPLE
    SetupCrossTenantRelationshipForTargetTenant.ps1 -ResourceTenantDomain fabrikam.onmicrosoft.com -TargetTenantDomain contoso.onmicrosoft.com -ResourceTenantAdminEmail admin@contoso.onmicrosoft.com -ResourceGroup "TESTPSRG" -KeyVaultName "TestPSKV" -CertificateSubject "CN=TESTCERTSUBJ" -AzureAppPermissions Exchange, MSGraph -UseAppAndCertGeneratedForSendingInvitation -KeyVaultAuditStorageAccountName "KeyVaultLogsStorageAcnt" -KeyVaultAuditStorageResourceGroup TestResGrp0 -KeyVaultAuditStorageAccountName testauditname0 -KeyVaultAuditStorageAccountLocation westus -KeyVaultAuditStorageAccountSKU Standard_GRS -MigrationEndpointMaxConcurrentMigrations 20 -ExistingApplicationId d7404497-1e2f-4b58-bdd5-93e82dad91a4 -AzureResourceLocation "West US"
@@ -181,7 +187,11 @@ param
 
     [Parameter(Mandatory=$false, HelpMessage='Use this switch if you are connecting to a tenant in the US Government Cloud')]
     [Switch]
-    $Government
+    $Government,
+    
+    [Parameter(Mandatory=$false, HelpMessage='Use this switch if you are connecting to a tenant in the US Government Cloud - Dod')]
+    [Switch]
+    $Dod
 )
 
 $ErrorActionPreference = 'Stop'
@@ -205,9 +215,17 @@ function Main() {
             Write-Error "Cannot use application for sending invitation as it does not have permissions on MSGraph"
         }
 
-        $azureADAccount = Connect-AzureAD
+        if ($Government -eq $true -or $Dod -eq $true) {
+            $azureADAccount = Connect-AzureAD -AzureEnvironmentName AzureUSGovernment
+        } else {
+            $azureAdAccount = Connect-AzureAD
+        }
         Write-Verbose "Connected to AzureAD - $($azureADAccount | Out-String)"
-        $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString()
+        if ($Government -eq $true -or $Dod -eq $true) {
+            $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString() -Environment AzureUSGovernment
+        } else {
+            $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString()
+        }
         Write-Verbose "Connected to Az Account - $($azAccount | Out-String)"
 
         Write-Host "Setting up key vault in the $TargetTenantDomain tenant"
@@ -271,6 +289,16 @@ function Main() {
 function Check-ExchangeOnlinePowershellConnection {
     if ($Null -eq (Get-Command New-OrganizationRelationship -ErrorAction SilentlyContinue)) {
         Write-Error "Please connect to the Exchange Online Management module or Exchange Online through basic authentication before running this script!";
+    }
+}
+
+function Check-AzurePowershellConnection {
+    if ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation}) -and $Government -eq $true -or (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation}) -and $Dod) {
+        Connect-AzAccount -Environment AzureUSGovernment
+    } elseif ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation})) {
+        Connect-AzAccount
+    } if ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation})) {
+        Write-Error "A valid Azure location was not specified, please run Get-AzLocation to determine a valid location."
     }
 }
 
@@ -447,7 +475,7 @@ function Create-KeyVaultAndGenerateCertificate([string]$targetTenant, `
                 Write-Error "Certificate not found after retries."
             }
 
-            sleep 5
+            sleep 60
         }
 
         $tries--
@@ -528,14 +556,14 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
 
     Write-Host "Application $appName created successfully in $targetTenantDomain tenant with following permissions. $permissions" -Foreground Green
     Write-Host "Admin consent URI for $targetTenantDomain tenant admin is -" -Foreground Yellow
-    if ($Government -eq $true) {
+    if ($Government -eq $true -or $DoD -eq $true) {
         Write-Host ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
     } else {
         Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $targetTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
     }
 
     Write-Host "Admin consent URI for $resourceTenantDomain tenant admin is -" -Foreground Yellow
-    if ($Government -eq $true) {
+    if ($Government -eq $true -or $DoD -eq $true) {
         Write-Host ("https://login.microsoftonline.us/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
     } else {
         Write-Host ("https://login.microsoftonline.com/{0}/adminconsent?client_id={1}&redirect_uri={2}" -f $resourceTenantDomain, $appCreated.AppId, $appCreated.ReplyUrls[0])
@@ -545,7 +573,7 @@ function Create-Application([string]$targetTenantDomain, [string]$resourceTenant
 }
 
 function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$resourceUri, $appSecretCert) {
-    if ($Government -eq $true) {
+    if ($Government -eq $true -or $DoD -eq $true) {
         $authority = "https://login.microsoftonline.us/$authContextTenant/oauth2/token"
     } else {
         $authority = "https://login.microsoftonline.com/$authContextTenant/oauth2/token"
@@ -567,7 +595,7 @@ function Get-AppOnlyToken([string]$authContextTenant, [string]$appId, [string]$r
 }
 
 function Get-AccessTokenWithUserPrompt([string]$authContextTenant, [string]$resourceUri) {
-    if ($Government -eq $true) {
+    if ($Government -eq $true -or $DoD -eq $true) {
         $authority = "https://login.microsoftonline.us/common/oauth2/token"
     } else {
         $authority = "https://login.microsoftonline.com/common/oauth2/token"
@@ -583,6 +611,8 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
     $authRes = $null
     if ($Government -eq $true) {
         $msGraphResourceUri = "https://graph.microsoft.us"
+    } elseif ($DoD -eq $true) {
+        $msGraphResourceUri = "https://dod-graph.microsoft.us"
     } else {
         $msGraphResourceUri = "https://graph.microsoft.com"
     }
@@ -632,6 +662,8 @@ function Send-AdminConsentUri([string]$invitingTenant, [string]$resourceTenantDo
 
     if ($Government -eq $true) {
         $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.us/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
+    } elseif ($DoD -eq $true) {
+        $resp = Invoke-RestMethod -Method POST -Uri "https://dod-graph.microsoft.us/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
     } else {
         $resp = Invoke-RestMethod -Method POST -Uri "https://graph.microsoft.com/v1.0/invitations" -Body $invitationBodyJson -ContentType 'application/json' -Headers $headers
     }
@@ -691,24 +723,37 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `
                                         -RemoteTenant $resourceTenantDomain `
-                                        -RemoteServer "outlook.office.us" `
+                                        -RemoteServer "outlook.office365.us" `
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -ExchangeRemoteMove:$true
-    }
-    elseif ($Government -eq $true)
-    {
+    } elseif ($Government -eq $true) {
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `
                                         -RemoteTenant $resourceTenantDomain `
-                                        -RemoteServer "outlook.office.us" `
+                                        -RemoteServer "outlook.office365.us" `
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
                                         -ExchangeRemoteMove:$true
-    }
-    elseif (-not $MigrationEndpointMaxConcurrentMigrations)
-    {
+    } elseif (-not $MigrationEndpointMaxConcurrentMigrations -and $DoD -eq $true) {
+        $global:MigrationEndpoint = New-MigrationEndpoint `
+                                        -Name $orgRelName `
+                                        -RemoteTenant $resourceTenantDomain `
+                                        -RemoteServer "dod-outlook.office365.us" `
+                                        -ApplicationId $appId `
+                                        -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -ExchangeRemoteMove:$true
+    } elseif ($DoD -eq $true) {
+        $global:MigrationEndpoint = New-MigrationEndpoint `
+                                        -Name $orgRelName `
+                                        -RemoteTenant $resourceTenantDomain `
+                                        -RemoteServer "dod-outlook.office365.us" `
+                                        -ApplicationId $appId `
+                                        -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
+                                        -MaxConcurrentMigrations $MigrationEndpointMaxConcurrentMigrations `
+                                        -ExchangeRemoteMove:$true
+    } elseif (-not $MigrationEndpointMaxConcurrentMigrations) {
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `
                                         -RemoteTenant $resourceTenantDomain `
@@ -716,9 +761,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -ApplicationId $appId `
                                         -AppSecretKeyVaultUrl $appSecretKeyVaultUrl `
                                         -ExchangeRemoteMove:$true
-    }
-    else
-    {
+    } else {
         $global:MigrationEndpoint = New-MigrationEndpoint `
                                         -Name $orgRelName `
                                         -RemoteTenant $resourceTenantDomain `
@@ -729,7 +772,7 @@ function Run-ExchangeSetupForTargetTenant([string]$targetTenant, [string]$resour
                                         -ExchangeRemoteMove:$true
     }
 
-    if ($Error[0].Exception.ErrorRecord.FullyQualifiedErrorId.Contains("MaximumConcurrentMigrationLimitExceededException"))
+    if ($Null -ne $Error[0] -and $Error[0].Exception.ErrorRecord.FullyQualifiedErrorId.Contains("MaximumConcurrentMigrationLimitExceededException"))
     {
         Write-Error "Failed to create migration endpoint, please adjust MaxConcurrentMigrations for existing migration endpoints then re-run setup script with -MigrationEndpointMaxConcurrentMigrations option"
     }
@@ -790,7 +833,6 @@ function PreValidation() {
     if ($choice -ne 0) {
         Exit}
     else {Verification}
-
 }
 
 function Verification {
@@ -810,12 +852,9 @@ function Verification {
         Remove-Item -Path $ScriptDir\XTenantTemp\ -Recurse -Force | Out-Null
     }
     Write-Host "`nVerifying that a valid location was specified for Azure`n"
-    if ($Null -eq (Get-AzLocation -ErrorAction SilentlyContinue | ?{$_.DisplayName -eq $AzureResourceLocation})) {
-        Write-Host "A valid Azure location was not specified, please run Get-AzLocation to determine a valid location."
-        Exit
-    }
+    Check-AzurePowershellConnection
     New-Item -Path $ScriptDir -Name XTenantTemp -ItemType Directory | Out-Null
-    Invoke-WebRequest -Uri https://aka.ms/TargetTenant -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
+    Invoke-WebRequest -UseBasicParsing -Uri https://aka.ms/TargetTenant -Outfile $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1
     if ((Get-FileHash $ScriptDir\SetupCrossTenantRelationshipForTargetTenant.ps1).hash -eq (Get-FileHash $ScriptDir\XTenantTemp\SetupCrossTenantRelationshipForTargetTenant.ps1).hash) {
         Write-Host "`nYou are using the latest version of the script. Removing temporary files and proceeding with setup."
         Start-Sleep 1
@@ -838,14 +877,17 @@ PreValidation
 Main
 
 <#
-set-OrganizationRelationship -Identity <tenant>\<id> -OAuthApplicationId 484a8384-979a-4cc9-8791-8e6bb34f76d4
+Set-OrganizationRelationship -Identity <tenant>\<id> -OAuthApplicationId 484a8384-979a-4cc9-8791-8e6bb34f76d4
 Set-OrganizationRelationship  -Identity <id> -OAuthApplicationId 484a8384-979a-4cc9-8791-8e6bb34f76d4
 Set-MigrationEndpoint -Identity 75f7afc6-417a-4fbe-801b-654f6b8f38e3 -Organization <org> -ApplicationId 484a8384-979a-4cc9-8791-8e6bb34f76d4 -AppSecretKeyVaultUrl <kvUrl> -SkipVerification
 New-MoveRequest <id> -Remote -RemoteTenant <remoteOrg> -TargetDeliveryDomain <targetOrg> -SourceEndpoint 75f7afc6-417a-4fbe-801b-654f6b8f38e3  -whatif
 #>
 <#
 function Verify-ApplicationLocalTenant ([bool]$localTenant, [string]$appId, [string]$targetTenant, [string]$appReplyUrl, [string]$friendTenant) {
-    if ($localTenant -eq $false) {
+    if ($localTenant -eq $false -and $Government -eq $true -or $localTenant -eq $false -and $Dod -eq $true) {
+        Write-Host "Log into $friendTenant"
+        Connect-AzureAD -AzureEnvironmentName AzureUSGovernment
+    } else {
         Write-Host "Log into $friendTenant"
         Connect-AzureAD
     }

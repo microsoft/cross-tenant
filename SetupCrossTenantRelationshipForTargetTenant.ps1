@@ -203,8 +203,8 @@ $MS_GRAPH_APP_ROLE = "User.Invite.All"
 $EXO_APP_ID = "00000002-0000-0ff1-ce00-000000000000"
 $EXO_APP_ROLE = "Mailbox.Migration"
 $REPLY_URL = "https://office.com"
-$FIRSTPARTY_POWERSHELL_CLIENTID = "a0c73c16-a7e3-4564-9a95-2bdf47383716"
-$FIRSTPARTY_POWERSHELL_CLIENT_REDIRECT_URI = 'urn:ietf:wg:oauth:2.0:oob' -as [Uri]
+$FIRSTPARTY_POWERSHELL_CLIENTID = "1950a258-227b-4e31-a9cf-717495945fc2"
+$FIRSTPARTY_POWERSHELL_CLIENT_REDIRECT_URI = 'https://login.microsoftonline.com/organizations/oauth2/nativeclient' -as [Uri]
 
 function Main() {
 

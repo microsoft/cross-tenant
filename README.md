@@ -1,7 +1,7 @@
 
 # Contributing
 
-**The scripts and the use of Azure Keyvault have been deprecated and will no longer be supported for use. If you were directed here through an incorrect link or an older link, please refresh the following URL to get the latest steps for setup.**
+**The scripts and the use of Azure Key Vault have been deprecated and will no longer be supported for use. If you were directed here through an incorrect link or an older link, please refresh the following URL to get the latest steps for setup that do not require these scripts or Azure Key Vault.**
 
 https://docs.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-mailbox-migration?view=o365-worldwide
 

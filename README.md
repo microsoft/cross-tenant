@@ -1,6 +1,10 @@
 
 # Contributing
 
+**The scripts and the use of Azure Keyvault have been deprecated and will no longer be supported for use. If you were directed here through an incorrect link or an older link, please refresh the following URL to get the latest steps for setup.**
+
+https://docs.microsoft.com/en-us/microsoft-365/enterprise/cross-tenant-mailbox-migration?view=o365-worldwide
+
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
 the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.

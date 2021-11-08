@@ -22,10 +22,13 @@
             a. Is registered in the target tenant directory
             b. Is setup with right permissions on MSGraph and Exchange
             c. Is consented by an administrator
-        2. Validates the following in OrganizationRelationship:
+        2. Validates the following in KeyVault:
+            a. The KeyVault url is correct
+            b. Exchange first party application has READ permissions on the secret
+        3. Validates the following in OrganizationRelationship:
             a. Has a relationship with Source tenant
             b. The move direction is correct.
-        3. Validates the following on Migration Endpoint:
+        4. Validates the following on Migration Endpoint:
             a. ApplicationId is correct.
             b. ApplicationKeyVaultUrl is correct.
             c. RemoteTenantId is correct.
@@ -39,11 +42,14 @@
    .PARAMETER ApplicationId
    ApplicationId - the application setup for mailbox migration.
 
-   .EXAMPLE - TargetTenant
-   $report = VerifySetup.ps1 -PartnerTenantId <SourceTenantId> -ApplicationId <AADApplicationId>  -PartnerTenantDomain <PartnerTenantDomain> -Verbose
+   .PARAMETER ApplicationKeyVaultUrl
+   ApplicationKeyVaultUrl - the keyvault url for application secret.
 
    .EXAMPLE - TargetTenant
-   $report = VerifySetup.ps1 -PartnerTenantId <SourceTenantId> -ApplicationId <AADApplicationId>  -PartnerTenantDomain <PartnerTenantDomain> -Verbose
+   $report = VerifySetup.ps1 -PartnerTenantId <SourceTenantId> -ApplicationId <AADApplicationId> -ApplicationKeyVaultUrl <appKeyVaultUrl> -PartnerTenantDomain <PartnerTenantDomain> -Verbose
+
+   .EXAMPLE - TargetTenant
+   $report = VerifySetup.ps1 -PartnerTenantId <SourceTenantId> -ApplicationId <AADApplicationId> -ApplicationKeyVaultUrl <appKeyVaultUrl> -PartnerTenantDomain <PartnerTenantDomain> -SubscriptionId <AzureSubscriptionId> -Verbose
 
    .EXAMPLE - SourceTenant
    $report = VerifySetup.ps1 -PartnerTenantId <TargetTenantId> -ApplicationId <AADApplicationId>
@@ -67,12 +73,36 @@ param
 
 [Parameter(Mandatory = $true, HelpMessage='PartnerTenantDomain', ParameterSetName = 'VerifyTarget')]
 [ValidateScript({ -not [string]::IsNullOrWhiteSpace($_) })]
-[string]$PartnerTenantDomain
+[string]$PartnerTenantDomain,
+
+
+
+[Parameter(Mandatory = $true, HelpMessage='App secret key vault url', ParameterSetName = 'VerifyTarget')]
+[ValidateScript({
+    if ($_ -cmatch "^https://[a-zA-Z_0-9\-]+\.vault\.azure.net(:443){0,1}/certificates/[a-zA-Z_0-9\-]+/[a-zA-Z_0-9]+$")
+    {
+        $true
+    }
+    elseif ($_ -cmatch "^https://[a-zA-Z_0-9]+\.vault\.azure.us(:443){0,1}/certificates/[a-zA-Z_0-9]+/[a-zA-Z_0-9]+$") {
+        $true
+    }
+    else
+    {
+    throw [System.Management.Automation.ValidationMetadataException] "Please make sure key vault url matches format specified here: https://docs.microsoft.com/en-us/azure/key-vault/general/about-keys-secrets-certificates#vault-name-and-object-name"
+    }
+})]
+[string]$ApplicationKeyVaultUrl,
+
+[Parameter(Mandatory = $false, HelpMessage='SubscriptionId for key vault', ParameterSetName = 'VerifyTarget')]
+[Parameter(Mandatory = $false, HelpMessage='SubscriptionId for key vault', ParameterSetName = 'VerifySource')]
+[ValidateScript({-not [string]::IsNullOrWhiteSpace($_)})]
+[string]$SubscriptionId
 )
 
 $ErrorActionPreference = 'Stop'
 
 $MS_GRAPH_APP_ID = "00000003-0000-0000-c000-000000000000"
+$MS_GRAPH_APP_ROLE = "User.Invite.All"
 $EXO_APP_ID = "00000002-0000-0ff1-ce00-000000000000"
 $EXO_APP_ROLE = "Mailbox.Migration"
 
@@ -85,12 +115,21 @@ function Main() {
     $azAccount = Connect-AzAccount -Tenant $azureADAccount.Tenant.ToString()
     Write-Verbose "Connected to Az Account - $($azAccount | Out-String)"
     $currentTenantId = $azureADAccount.TenantId.Guid
-
+    if($isTargetTenant -eq $true)
+    {
+        Check-AzSubscription
+    }
     Write-Verbose "Verifying Application; AppId: [$ApplicationId] Current tenant: [$currentTenantId] Partner tenant: [$PartnerTenantId] IsTargetTenant: [$isTargetTenant]"
     $errors, $warnings = Verify-Application $ApplicationId $currentTenantId $PartnerTenantId $isTargetTenant
     $report["Application"] = @{ "Errors" = $errors; "Warnings" = $warnings }
     Write-Host "`r`n"
     Print-Result "Verifying AAD Application" $errors $warnings
+    if ($isTargetTenant -eq $true) {
+        Write-Verbose "Verifying KeyVault; AppId: [$ApplicationId] ApplicationKeyVaultUrl: [$ApplicationKeyVaultUrl]"
+        $errors = Verify-KeyVault $ApplicationId $ApplicationKeyVaultUrl
+        Print-Result "Verifying KeyVault" $errors
+        $report["KeyVault"] = @{ "Errors" = $errors }
+    }
     
     Write-Verbose "Verifying OrganizationRelationship; AppId: [$ApplicationId] Partner tenant: [$PartnerTenantId] IsTargetTenant: [$isTargetTenant]"
     $errors = Verify-OrganizationRelationship $PartnerTenantId $ApplicationId $isTargetTenant
@@ -170,7 +209,40 @@ function Verify-Application ([string]$appId, [string]$currentTenantId, [string]$
         $errors += "App [$appId] does not have [$EXO_APP_ROLE] permission on Exchange setup or the permission is not consented by an Administrator"
     }
     
+    if (!$msGraphPermissionForApp -or ($msGraphPermissionForApp.Id -ne $msGraphDirectoryPermissions.Id)) {
+        $warnings += "App [$appId] does not have [$MS_GRAPH_APP_ROLE] permission on MSGraph setup or the permission is not consented by an Administrator"
+    }
+    
     $errors, $warnings
+}
+
+function Verify-KeyVault([string]$appId, [string]$appKvUrl) {
+    $errors = @()
+    try {
+        $uri = [System.Uri]::new($appKvUrl)
+        $kvName = $uri.Host.Split(".")[0]
+        $kv = Get-AzKeyVault -VaultName $kvName
+        if (!$kv) {
+            $errors += "KeyVault: $kvName not found"
+            return $errors
+        } 
+             
+        $exoSpn = Get-AzureADServicePrincipal -Filter "AppId eq '$EXO_APP_ID'"
+        $exoAccessPolicy = $kv.AccessPolicies | ? { $_.ObjectId -eq $exoSpn.ObjectId }
+        if (!$exoAccessPolicy) {
+            $errors += "Exchange does not have any permissions on the KeyVault [$kvName]"
+            return $errors
+        }        
+        
+        $certStorePermissions = $exoAccessPolicy.PermissionsToCertificates.ToLower()
+        $secretStorePermissions = $exoAccessPolicy.PermissionsToSecrets.ToLower()
+        "get", "list" | % { if (!$certStorePermissions.Contains($_)) {$errors += "Exchange does not have [$_] permission on KeyVault [$kvName]'s Certificate container"}}
+        "get", "list" | % { if (!$secretStorePermissions.Contains($_)) {$errors += "Exchange does not have [$_] permission on KeyVault [$kvName]'s Secrets container"}}
+    } catch {
+        $errors += $_.Message
+    }
+    
+    $errors
 }
 
 function Verify-OrganizationRelationship([string]$partnerTenantId, [string]$appId, [bool]$isTargetTenant) {
@@ -230,6 +302,10 @@ function Verify-MigrationEndpoint([string]$partnerTenantDomain, [string]$appId, 
         $errors += "ApplicationId does not match in Migration Endpoint. Expected [$appId] found [$($migEp.ApplicationId)]"
     }
     
+    if ($migEp.AppSecretKeyVaultUrl -ne $appKvUrl) {
+        $errors += "AppSecretKeyVaultUrl does not match in Migration Endpoint. Expected [$appKvUrl] found [$($migEp.AppSecretKeyVaultUrl)]"
+    }
+    
     if (!$migEp.IsRemote) {
         $errors += "IsRemote does not match in Migration Endpoint. Expected [true] found [$($migEp.IsRemote)]"
     }
@@ -240,6 +316,27 @@ function Verify-MigrationEndpoint([string]$partnerTenantDomain, [string]$appId, 
 function Check-ExchangeOnlinePowershellConnection {
     if ($Null -eq (Get-Command New-OrganizationRelationship -ErrorAction SilentlyContinue)) {
         Write-Error "Please connect to the Exchange Online Management module or Exchange Online through basic authentication before running this script!";
+    }
+}
+
+function Check-AzSubscription {
+    if (!$SubscriptionId)
+    {
+        $subscriptions = Get-AzSubscription
+
+        if ($subscriptions.Count -gt 1) {
+            Write-Error "Multipule Azure subscriptions were found for this tenant. Please rerun the script and use the -SubscriptionId parameter with the correct subscription"
+        }
+        elseif (!$subscriptions) {
+            Write-Error "No valid Azure subscriptions were found for this tenant."
+        }
+
+        Set-AzContext -Subscription $subscriptions.SubscriptionId
+        }
+    elseif ($SubscriptionID) 
+    {
+    Write-Verbose "SubscriptionId - $SubscriptionId was provided."
+    Set-AzContext -Subscription $SubscriptionId
     }
 }
 

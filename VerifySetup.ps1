@@ -27,8 +27,7 @@
             b. The move direction is correct.
         3. Validates the following on Migration Endpoint:
             a. ApplicationId is correct.
-            b. ApplicationKeyVaultUrl is correct.
-            c. RemoteTenantId is correct.
+            b. RemoteTenantId is correct.
 
    .PARAMETER PartnerTenantId
    PartnerTenantId - the tenant id of the partner tenant.
@@ -98,8 +97,8 @@ function Main() {
     $report["OrganizationRelationship"] = @{ "Errors" = $errors }
     
     if ($isTargetTenant -eq $true) {
-        Write-Verbose "Verifying MigrationEndpoint; AppId: [$ApplicationId] Partner tenant: [$PartnerTenantDomain] ApplicationKeyVaultUrl: [$ApplicationKeyVaultUrl]"
-        $errors = Verify-MigrationEndpoint $PartnerTenantDomain $ApplicationId $ApplicationKeyVaultUrl
+        Write-Verbose "Verifying MigrationEndpoint; AppId: [$ApplicationId] Partner tenant: [$PartnerTenantDomain]"
+        $errors = Verify-MigrationEndpoint $PartnerTenantDomain $ApplicationId
         Print-Result "Verifying MigrationEndpoint" $errors 
         $report["MigrationEndpoint"] = @{ "Errors" = $errors }
     }
@@ -214,7 +213,7 @@ function Verify-OrganizationRelationship([string]$partnerTenantId, [string]$appI
     return $errors
 }
 
-function Verify-MigrationEndpoint([string]$partnerTenantDomain, [string]$appId, [string]$appKvUrl) {
+function Verify-MigrationEndpoint([string]$partnerTenantDomain, [string]$appId) {
     $errors = @()
     $migEp = Get-MigrationEndpoint | ? { $_.ApplicationId -eq $appId }
     if (!$migEp) {
